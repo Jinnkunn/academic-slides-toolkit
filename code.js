@@ -193,7 +193,7 @@ async function saveStorage(storage) {
 figma.showUI(__html__, {
   width: 360,
   height: 640,
-  title: "Footer Sync for Slides · " + RUNTIME_VERSION
+  title: "Academic Slides Toolkit · " + RUNTIME_VERSION
 });
 
 function serializeNode(node, depth = 0) {

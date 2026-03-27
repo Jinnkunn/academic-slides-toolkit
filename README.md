@@ -47,8 +47,8 @@ This project started from a footer-sync plugin and is being expanded into a broa
 
 Notes:
 
-- The current manifest still uses the in-product plugin name `Footer Sync for Slides`.
-- The repository name is broader because the project scope is broader than the original footer-only prototype.
+- The plugin now uses the in-product name `Academic Slides Toolkit`.
+- The plugin `id` is still `footer-sync-slides` for now, to avoid unnecessary identifier churn while the product is still evolving.
 
 ## Usage
 
