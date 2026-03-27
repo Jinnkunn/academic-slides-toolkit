@@ -1,7 +1,7 @@
 // UI entry point — wires all modules together and exposes globals for onclick handlers
 
 import { setModule, openOverlayPage, closeOverlayPage, requestPages, renderModuleShell, refreshTemplatePanelsImpl } from "./navigation";
-import { renderEquationInsertPreview, renderEquationSelectedPreview, insertEquation, updateSelectedEquation, deleteSelectedEquation, applyEquationNumbering, clearEquationNumbering, onEquationSelection, onEquationInserted, onEquationUpdated, onEquationDeleted, onEquationNumberingApplied, onEquationNumberingCleared } from "./equations-ui";
+import { renderEquationInsertPreview, renderEquationSelectedPreview, insertEquation, updateSelectedEquation, deleteSelectedEquation, applyEquationNumbering, clearEquationNumbering, onEquationSelection, onEquationInserted, onEquationUpdated, onEquationDeleted, onEquationNumberingApplied, onEquationNumberingCleared, initSnippets } from "./equations-ui";
 import {
   updateTemplateSelector, updateOverviewImpl, onSelection, saveTemplate, onActiveTemplateChange, onTemplates,
   onTemplateSaved, onTemplateKindChange, onLayoutAreaChange, setTemplateSummary, onTotalModeChange, toggleIndicator,
@@ -148,6 +148,7 @@ window.onmessage = (event: MessageEvent) => {
 send("get-selection");
 send("get-templates");
 send("get-settings");
+initSnippets();
 
 document.addEventListener("keydown", (event: KeyboardEvent) => {
   if (event.key === "Escape") {

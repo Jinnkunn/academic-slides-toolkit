@@ -27,6 +27,6 @@
     "typescript": "^6.0.2"
   },
   "dependencies": {
-    "mathjax": "^3.2.2"
+    "mathjax-full": "^3.2.1"
   }
 }

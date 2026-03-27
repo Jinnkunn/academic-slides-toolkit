@@ -982,6 +982,50 @@ input[type=number]::-webkit-outer-spin-button {
   gap: 10px;
 }
 
+.snippet-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.snippet-btn {
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 100ms ease, border-color 100ms ease;
+}
+
+.snippet-btn:hover {
+  background: #f3f4f6;
+  border-color: var(--line-strong);
+}
+
+.snippet-btn:active {
+  background: #e5e7eb;
+}
+
+.snippet-label {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.snippet-section-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-soft);
+  padding: 4px 0 2px;
+}
+
 .equation-textarea {
   width: 100%;
   min-height: 112px;
@@ -1045,20 +1089,6 @@ input[type=number]::-webkit-outer-spin-button {
   border-radius: 999px;
 }
 </style>
-<script>
-window.MathJax = {
-  svg: { fontCache: "none" },
-  startup: {
-    ready: function() {
-      MathJax.startup.defaultReady();
-      window.__mathjaxReady = true;
-      window.__mathjaxFailed = false;
-      window.dispatchEvent(new Event("mathjax-ready"));
-    }
-  }
-};
-window.__mathjaxFailed = false;
-</script>
 <!-- INJECT_MATHJAX -->
 </head>
 <body>
@@ -1455,6 +1485,12 @@ window.__mathjaxFailed = false;
           <div class="section-body">
             <div class="equation-editor">
               <textarea class="equation-textarea" id="equation-input" placeholder="例如：\\int_0^1 x^2 \\, dx = \\frac{1}{3}" oninput="renderEquationInsertPreview()"></textarea>
+              <div id="snippet-panel">
+                <div class="snippet-section-title" id="snippet-title-common">常用结构</div>
+                <div class="snippet-grid" id="snippet-grid-common"></div>
+                <div class="snippet-section-title" id="snippet-title-greek" style="margin-top:6px">希腊字母 & 符号</div>
+                <div class="snippet-grid" id="snippet-grid-symbols"></div>
+              </div>
               <div class="equation-grid">
                 <div class="field">
                   <label for="equation-display-mode" id="equations-display-mode-label">显示模式</label>

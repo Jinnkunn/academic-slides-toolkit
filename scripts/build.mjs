@@ -8,12 +8,32 @@ const root = resolve(__dirname, "..");
 const isProd = process.argv.includes("--prod");
 const isWatch = process.argv.includes("--watch");
 
-function buildHtml(uiJs) {
+// MathJax custom bundle options (liteAdaptor + selective TeX packages)
+const mathjaxOptions = {
+  entryPoints: [resolve(root, "src/ui/mathjax-custom.ts")],
+  bundle: true,
+  format: "iife",
+  target: "es2020",
+  write: false,
+  minify: true, // always minify MathJax — it's large
+  logLevel: "warning",
+};
+
+let mathjaxCache = null;
+
+async function buildMathjax() {
+  if (mathjaxCache) return mathjaxCache;
+  const result = await esbuild.build(mathjaxOptions);
+  mathjaxCache = result.outputFiles[0].text;
+  console.log("[build] MathJax bundled (" + Math.round(mathjaxCache.length / 1024) + " KB)");
+  return mathjaxCache;
+}
+
+function buildHtml(uiJs, mathjaxJs) {
   const template = readFileSync(resolve(root, "src/ui/ui-template.html"), "utf8");
-  const mathjax = readFileSync(resolve(root, "node_modules/mathjax/es5/tex-svg.js"), "utf8");
 
   const html = template
-    .replace("<!-- INJECT_MATHJAX -->", `<script>${mathjax}</script>`)
+    .replace("<!-- INJECT_MATHJAX -->", `<script>${mathjaxJs}</script>`)
     .replace("<!-- INJECT_UI_SCRIPT -->", `<script>${uiJs}</script>`);
 
   mkdirSync(resolve(root, "dist"), { recursive: true });
@@ -45,13 +65,16 @@ const uiOptions = {
 };
 
 async function build() {
-  // Build plugin
-  await esbuild.build(pluginOptions);
+  // Build plugin + MathJax in parallel
+  const [, mathjaxJs] = await Promise.all([
+    esbuild.build(pluginOptions),
+    buildMathjax(),
+  ]);
 
   // Build UI JS and assemble HTML
   const uiResult = await esbuild.build(uiOptions);
   const uiJs = uiResult.outputFiles[0].text;
-  buildHtml(uiJs);
+  buildHtml(uiJs, mathjaxJs);
 }
 
 async function watch() {
@@ -71,7 +94,7 @@ async function watch() {
           if (result.errors.length === 0) {
             try {
               const uiJs = readFileSync(resolve(root, "dist/_ui_bundle.js"), "utf8");
-              buildHtml(uiJs);
+              buildMathjax().then((mj) => buildHtml(uiJs, mj));
             } catch (e) {
               console.error("[build] HTML rebuild failed:", e.message);
             }

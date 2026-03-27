@@ -170,6 +170,8 @@ export const I18N: Record<string, Record<string, string>> = {
     equationsSelectedPlaceholder: "选中插件创建的公式后，这里会显示源码",
     equationsSelectedPreviewEmpty: "选中公式后预览。",
     equationsAutoOpened: "已检测到公式，自动打开编辑器。",
+    snippetTitleCommon: "常用结构",
+    snippetTitleSymbols: "希腊字母 & 符号",
     equationsUpdateButton: "更新公式",
     equationsDeleteButton: "删除公式",
     equationsDeleteConfirm: "删除当前公式？",
@@ -428,6 +430,8 @@ export const I18N: Record<string, Record<string, string>> = {
     equationsSelectedPlaceholder: "When a plugin-created equation is selected, its source will appear here",
     equationsSelectedPreviewEmpty: "Preview selected equation here.",
     equationsAutoOpened: "Equation detected — editor opened automatically.",
+    snippetTitleCommon: "Common Structures",
+    snippetTitleSymbols: "Greek Letters & Symbols",
     equationsUpdateButton: "Update Equation",
     equationsDeleteButton: "Delete Equation",
     equationsDeleteConfirm: "Delete the current equation?",
@@ -728,6 +732,8 @@ export function renderStaticLanguage(): void {
   setText("equations-numbering-apply-btn", "equationsNumberingApply");
   setText("equations-numbering-clear-btn", "equationsNumberingClear");
   setText("equations-numbering-hint", "equationsNumberingHint");
+  setText("snippet-title-common", "snippetTitleCommon");
+  setText("snippet-title-greek", "snippetTitleSymbols");
   setText("components-hero-title", "componentsHeroTitle");
   setText("components-hero-desc", "componentsHeroDesc");
   setText("components-card-figure-title", "componentsFigureTitle");

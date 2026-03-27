@@ -16,6 +16,105 @@ declare function closeOverlayPage(): void;
 declare function setModule(moduleId: string): void;
 
 // ---------------------------------------------------------------------------
+// Equation snippets — one-click LaTeX template insertion
+// ---------------------------------------------------------------------------
+
+interface Snippet {
+  label: string;
+  latex: string;
+  /** If true, wraps the snippet around selected text in the textarea */
+  wrap?: boolean;
+}
+
+const SNIPPETS_COMMON: Snippet[] = [
+  { label: "\\frac{}{}", latex: "\\frac{a}{b}" },
+  { label: "\\sqrt{}", latex: "\\sqrt{x}" },
+  { label: "\\sum", latex: "\\sum_{i=1}^{n}" },
+  { label: "\\prod", latex: "\\prod_{i=1}^{n}" },
+  { label: "\\int", latex: "\\int_{a}^{b}" },
+  { label: "\\lim", latex: "\\lim_{x \\to \\infty}" },
+  { label: "x^{n}", latex: "x^{n}" },
+  { label: "x_{i}", latex: "x_{i}" },
+  { label: "\\binom{}{}", latex: "\\binom{n}{k}" },
+  { label: "\\vec{}", latex: "\\vec{v}" },
+  { label: "\\hat{}", latex: "\\hat{x}" },
+  { label: "\\bar{}", latex: "\\bar{x}" },
+  { label: "\\dot{}", latex: "\\dot{x}" },
+  { label: "matrix", latex: "\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}" },
+  { label: "cases", latex: "\\begin{cases} x & \\text{if } x > 0 \\\\ -x & \\text{otherwise} \\end{cases}" },
+  { label: "aligned", latex: "\\begin{aligned} a &= b + c \\\\ d &= e + f \\end{aligned}" },
+];
+
+const SNIPPETS_SYMBOLS: Snippet[] = [
+  { label: "\\alpha", latex: "\\alpha" },
+  { label: "\\beta", latex: "\\beta" },
+  { label: "\\gamma", latex: "\\gamma" },
+  { label: "\\delta", latex: "\\delta" },
+  { label: "\\theta", latex: "\\theta" },
+  { label: "\\lambda", latex: "\\lambda" },
+  { label: "\\sigma", latex: "\\sigma" },
+  { label: "\\omega", latex: "\\omega" },
+  { label: "\\partial", latex: "\\partial" },
+  { label: "\\nabla", latex: "\\nabla" },
+  { label: "\\infty", latex: "\\infty" },
+  { label: "\\approx", latex: "\\approx" },
+  { label: "\\neq", latex: "\\neq" },
+  { label: "\\leq", latex: "\\leq" },
+  { label: "\\geq", latex: "\\geq" },
+  { label: "\\in", latex: "\\in" },
+  { label: "\\subset", latex: "\\subset" },
+  { label: "\\cup", latex: "\\cup" },
+  { label: "\\cap", latex: "\\cap" },
+  { label: "\\forall", latex: "\\forall" },
+  { label: "\\exists", latex: "\\exists" },
+  { label: "\\rightarrow", latex: "\\rightarrow" },
+  { label: "\\Rightarrow", latex: "\\Rightarrow" },
+  { label: "\\cdot", latex: "\\cdot" },
+];
+
+function insertSnippetAtCursor(textarea: HTMLTextAreaElement, latex: string): void {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const before = textarea.value.substring(0, start);
+  const after = textarea.value.substring(end);
+
+  // If there's selected text, try to wrap it (e.g. for \frac{selection}{})
+  textarea.value = before + latex + " " + after;
+  const newCursor = start + latex.length + 1;
+  textarea.selectionStart = newCursor;
+  textarea.selectionEnd = newCursor;
+  textarea.focus();
+
+  // Trigger preview update
+  renderEquationInsertPreview();
+}
+
+function renderSnippetGrid(containerId: string, snippets: Snippet[], textareaId: string): void {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+  for (let i = 0; i < snippets.length; i++) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "snippet-btn";
+    btn.textContent = snippets[i].label;
+    btn.title = snippets[i].latex;
+    const latex = snippets[i].latex;
+    btn.addEventListener("click", () => {
+      const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
+      if (textarea) insertSnippetAtCursor(textarea, latex);
+    });
+    container.appendChild(btn);
+  }
+}
+
+export function initSnippets(): void {
+  renderSnippetGrid("snippet-grid-common", SNIPPETS_COMMON, "equation-input");
+  renderSnippetGrid("snippet-grid-symbols", SNIPPETS_SYMBOLS, "equation-input");
+}
+
+// ---------------------------------------------------------------------------
 // getEquationToastScope  (ui.html ~line 2629)
 // ---------------------------------------------------------------------------
 export function getEquationToastScope(): string {
@@ -31,7 +130,7 @@ export function getEquationToastScope(): string {
 // mathJaxReady  (ui.html ~line 2835)
 // ---------------------------------------------------------------------------
 export function mathJaxReady(): boolean {
-  return !!((window as any).__mathjaxReady && (window as any).MathJax && typeof (window as any).MathJax.tex2svg === "function");
+  return !!((window as any).__mathjaxReady && (window as any).__MathJaxCustom && typeof (window as any).__MathJaxCustom.tex2svg === "function");
 }
 
 // ---------------------------------------------------------------------------
@@ -64,17 +163,34 @@ export function renderEquationSvg(latex: string, displayMode: string, fontSize: 
   if (!mathJaxReady() || !latex) return "";
 
   try {
-    const wrapper = (window as any).MathJax.tex2svg(latex, {
+    // __MathJaxCustom.tex2svg returns an outer HTML string from liteAdaptor
+    const html = (window as any).__MathJaxCustom.tex2svg(latex, {
       display: displayMode === "display",
-      em: fontSize,
-      ex: Math.max(1, fontSize / 2),
-      containerWidth: 80 * fontSize,
     });
-    const svg = wrapper.querySelector("svg");
+    if (!html) return "";
+
+    // Parse and apply styling
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    const svg = tmp.querySelector("svg");
     if (!svg) return "";
     svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     svg.style.color = color;
     svg.style.maxWidth = "100%";
+
+    // Scale based on fontSize (MathJax liteAdaptor defaults to 16px ex)
+    const scale = fontSize / 16;
+    if (scale !== 1) {
+      const currentWidth = svg.getAttribute("width") || "";
+      const currentHeight = svg.getAttribute("height") || "";
+      if (currentWidth.endsWith("ex")) {
+        svg.setAttribute("width", (parseFloat(currentWidth) * scale) + "ex");
+      }
+      if (currentHeight.endsWith("ex")) {
+        svg.setAttribute("height", (parseFloat(currentHeight) * scale) + "ex");
+      }
+    }
+
     return svg.outerHTML;
   } catch (error) {
     return "";
