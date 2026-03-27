@@ -551,7 +551,7 @@ export function escJs(value: string | number): string {
 
 /** Return the message map for the current language, falling back to zh-CN. */
 export function getMessages(): Record<string, string> {
-  return I18N[currentLanguage] || I18N["zh-CN"];
+  return I18N[state.currentLanguage] || I18N["zh-CN"];
 }
 
 /** Translate a key, optionally interpolating `{var}` placeholders. */
@@ -793,7 +793,7 @@ export function applyLanguage(): void {
     setText("ind-hint", "indicatorIdle");
   }
 
-  document.documentElement.lang = currentLanguage === "en-US" ? "en" : "zh";
+  document.documentElement.lang = state.currentLanguage === "en-US" ? "en" : "zh";
 
   // The following rendering calls depend on functions defined elsewhere.
   // They are invoked via the global scope so that this module stays

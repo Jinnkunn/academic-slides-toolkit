@@ -45,9 +45,9 @@ export function toast(scope: string, message: string, type?: string): void {
 
 /** Look up a template object by its id. */
 export function getTemplateById(templateId: string | null): any {
-  for (let index = 0; index < allTemplates.length; index++) {
-    if (allTemplates[index].id === templateId) {
-      return allTemplates[index];
+  for (let index = 0; index < state.allTemplates.length; index++) {
+    if (state.allTemplates[index].id === templateId) {
+      return state.allTemplates[index];
     }
   }
   return null;
@@ -59,7 +59,7 @@ export function getTemplateById(templateId: string | null): any {
 
 /** Return the human-readable name of a page given its id. */
 export function getPageName(pageId: string): string {
-  const pages = pagesCache || [];
+  const pages = state.pagesCache || [];
   for (let index = 0; index < pages.length; index++) {
     if (pages[index].id === pageId) return pages[index].name;
   }
@@ -68,7 +68,7 @@ export function getPageName(pageId: string): string {
 
 /** Return the zero-based index of a page given its id, or -1 if not found. */
 export function getPageIndex(pageId: string): number {
-  const pages = pagesCache || [];
+  const pages = state.pagesCache || [];
   for (let index = 0; index < pages.length; index++) {
     if (pages[index].id === pageId) return pages[index].index;
   }
@@ -141,7 +141,7 @@ export function localizeBackendMessage(
 
   const raw = String(message || "");
   if (!raw) return raw;
-  if (currentLanguage !== "en-US") return raw;
+  if (state.currentLanguage !== "en-US") return raw;
 
   if (raw.indexOf("\u64cd\u4f5c\u5931\u8d25\uff1a") === 0) {
     // "操作失败：" prefix
@@ -156,29 +156,29 @@ export function localizeBackendMessage(
 
 /** Determine which toast container to target for generic errors. */
 export function getErrorToastScope(): string {
-  if (activeOverlay) {
+  if (state.activeOverlay) {
     if (
-      activeOverlay.moduleId === "deck" &&
-      (activeOverlay.pageId === "template" ||
-        activeOverlay.pageId === "sources" ||
-        activeOverlay.pageId === "sync")
+      state.activeOverlay.moduleId === "deck" &&
+      (state.activeOverlay.pageId === "template" ||
+        state.activeOverlay.pageId === "sources" ||
+        state.activeOverlay.pageId === "sync")
     ) {
-      return activeOverlay.pageId;
+      return state.activeOverlay.pageId;
     }
-    if (activeOverlay.moduleId === "equations") return getEquationToastScope();
+    if (state.activeOverlay.moduleId === "equations") return getEquationToastScope();
   }
-  if (currentModule === "equations") return getEquationToastScope();
-  if (currentModule === "settings") return "settings";
-  if (currentModule === "deck") return "sync";
+  if (state.currentModule === "equations") return getEquationToastScope();
+  if (state.currentModule === "settings") return "settings";
+  if (state.currentModule === "deck") return "sync";
   return "sync";
 }
 
 /** Determine which toast container to target for equation-related messages. */
 export function getEquationToastScope(): string {
-  if (activeOverlay && activeOverlay.moduleId === "equations") {
-    if (activeOverlay.pageId === "selected") return "equations-selected";
-    if (activeOverlay.pageId === "numbering") return "equations-numbering";
-    if (activeOverlay.pageId === "insert") return "equations";
+  if (state.activeOverlay && state.activeOverlay.moduleId === "equations") {
+    if (state.activeOverlay.pageId === "selected") return "equations-selected";
+    if (state.activeOverlay.pageId === "numbering") return "equations-numbering";
+    if (state.activeOverlay.pageId === "insert") return "equations";
   }
   return "equations-overview";
 }
