@@ -1993,6 +1993,7 @@ const I18N = {
     appliedResult: "已应用到 {applied} 个页面，跳过 {skipped} 个",
     syncResult: "已同步 {synced} 个页面",
     removedExcluded: "，移除 {removed} 个排除页模板区域",
+    templateConflicts: "，检测到 {count} 处模板区域重叠",
     missingSources: "，另有 {count} 个来源 slide 未找到",
     removedTemplateInstancesDone: "已删除 {count} 个已同步区域",
     deleteSourceConfirm: "删除这个内容来源配置？",
@@ -2217,6 +2218,7 @@ const I18N = {
     appliedResult: "Applied to {applied} slides and skipped {skipped}",
     syncResult: "Synced {synced} slides",
     removedExcluded: ", removed {removed} excluded template regions",
+    templateConflicts: ", detected {count} overlapping template-region conflicts",
     missingSources: ", and {count} source slides were missing",
     removedTemplateInstancesDone: "Removed {count} synced regions",
     deleteSourceConfirm: "Delete this content source?",
@@ -3975,10 +3977,13 @@ function onApplyComplete(message) {
     applied: message.applied,
     skipped: message.skipped
   });
+  if (message.conflicts) {
+    text += t("templateConflicts", { count: message.conflicts });
+  }
   if (message.missingSources) {
     text += t("missingSources", { count: message.missingSources });
   }
-  toast("sync", text, message.missingSources ? "info" : "success");
+  toast("sync", text, (message.missingSources || message.conflicts) ? "info" : "success");
 }
 
 function onSyncComplete(message) {
@@ -3986,10 +3991,13 @@ function onSyncComplete(message) {
   if (message.removed) {
     text += t("removedExcluded", { removed: message.removed });
   }
+  if (message.conflicts) {
+    text += t("templateConflicts", { count: message.conflicts });
+  }
   if (message.missingSources) {
     text += t("missingSources", { count: message.missingSources });
   }
-  toast("sync", text, message.missingSources ? "info" : "success");
+  toast("sync", text, (message.missingSources || message.conflicts) ? "info" : "success");
 }
 
 function onVariablesSaved() {

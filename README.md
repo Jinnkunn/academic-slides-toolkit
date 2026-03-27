@@ -13,6 +13,7 @@ Implemented now:
 - Save a header, footer, or custom region as a reusable template in Figma Slides
 - Choose anchor-based placement presets such as top center, bottom right, or custom position
 - Optionally align templates to a configurable safe area instead of raw slide edges
+- Reorder managed template regions deterministically and report overlap conflicts during sync
 - Auto-generate page numbers from a selected text node
 - Apply or sync a template region across slides
 - Exclude slides and control numbering start

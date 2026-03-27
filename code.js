@@ -768,6 +768,13 @@ function isManagedTemplateRoot(node, templateId) {
     && getPluginData(node, "templateInstanceFrom") === templateId;
 }
 
+function isAnyManagedTemplateRoot(node) {
+  return !!node
+    && typeof node.getPluginData === "function"
+    && getPluginData(node, "managedByAcademicSlides") === "true"
+    && getPluginData(node, "isTemplateInstanceRoot") === "true";
+}
+
 async function findManagedTemplateInstancesOnTarget(target, templateId) {
   const found = [];
   if (!target) return null;
@@ -780,6 +787,80 @@ async function findManagedTemplateInstancesOnTarget(target, templateId) {
   });
 
   return found;
+}
+
+async function findAllManagedTemplateRootsOnTarget(target) {
+  const found = [];
+  if (!target) return found;
+
+  await loadTargetIfNeeded(target);
+  walkScene(target, (node) => {
+    if (isAnyManagedTemplateRoot(node)) {
+      found.push(node);
+    }
+  });
+
+  return found;
+}
+
+function getNodeRect(node) {
+  return {
+    x: Number(node && node.x) || 0,
+    y: Number(node && node.y) || 0,
+    width: Number(node && node.width) || 0,
+    height: Number(node && node.height) || 0
+  };
+}
+
+function doRectsOverlap(a, b) {
+  return a.x < b.x + b.width
+    && a.x + a.width > b.x
+    && a.y < b.y + b.height
+    && a.y + a.height > b.y;
+}
+
+function getTemplateKindPriority(templateKind) {
+  if (templateKind === "header") return 10;
+  if (templateKind === "footer") return 20;
+  return 30;
+}
+
+async function countTemplateConflictsOnTarget(node, target, templateId) {
+  const roots = await findAllManagedTemplateRootsOnTarget(target);
+  const currentRect = getNodeRect(node);
+  let conflicts = 0;
+
+  for (let index = 0; index < roots.length; index++) {
+    const root = roots[index];
+    if (root.id === node.id) continue;
+    if (getPluginData(root, "templateInstanceFrom") === templateId) continue;
+    if (doRectsOverlap(currentRect, getNodeRect(root))) {
+      conflicts += 1;
+    }
+  }
+
+  return conflicts;
+}
+
+async function reorderManagedTemplateInstancesOnTarget(target, storage) {
+  const roots = await findAllManagedTemplateRootsOnTarget(target);
+  roots.sort((a, b) => {
+    const templateA = storage.templates[getPluginData(a, "templateInstanceFrom")];
+    const templateB = storage.templates[getPluginData(b, "templateInstanceFrom")];
+    const kindA = templateA ? normalizeTemplate(templateA.id || "", templateA).templateKind : "custom";
+    const kindB = templateB ? normalizeTemplate(templateB.id || "", templateB).templateKind : "custom";
+    const priorityDelta = getTemplateKindPriority(kindA) - getTemplateKindPriority(kindB);
+    if (priorityDelta !== 0) return priorityDelta;
+    const rectA = getNodeRect(a);
+    const rectB = getNodeRect(b);
+    if (rectA.y !== rectB.y) return rectA.y - rectB.y;
+    if (rectA.x !== rectB.x) return rectA.x - rectB.x;
+    return a.id.localeCompare(b.id);
+  });
+
+  for (let index = 0; index < roots.length; index++) {
+    target.appendChild(roots[index]);
+  }
 }
 
 async function getManagedTemplateInstanceForTarget(templateId, targetId, storage) {
@@ -1594,6 +1675,7 @@ async function handleApplyToAll(message) {
   const sourceCacheResult = await buildVariableSourceCache(runtimeTemplate, storage);
   let applied = 0;
   let skipped = 0;
+  let conflicts = 0;
 
   for (const target of targets) {
     const pageNumber = pageNumberMap[target.id];
@@ -1632,6 +1714,8 @@ async function handleApplyToAll(message) {
 
     await stampClone(clone, runtimeTemplate, pageNumber, total, sourceCacheResult.cache);
     applyTemplatePosition(clone, runtimeTemplate, targetNode);
+    conflicts += await countTemplateConflictsOnTarget(clone, targetNode, runtimeTemplate.id);
+    await reorderManagedTemplateInstancesOnTarget(targetNode, storage);
 
     storage.templateInstanceMap[mapKey] = clone.id;
     applied += 1;
@@ -1643,6 +1727,7 @@ async function handleApplyToAll(message) {
     applied,
     skipped,
     total: targets.length,
+    conflicts,
     missingSources: sourceCacheResult.missing.length
   });
 }
@@ -1680,6 +1765,7 @@ async function handleSyncAll(message) {
   const sourceCacheResult = await buildVariableSourceCache(runtimeTemplate, storage);
   let synced = 0;
   let removed = 0;
+  let conflicts = 0;
 
   for (const target of targets) {
     const pageNumber = pageNumberMap[target.id];
@@ -1707,6 +1793,8 @@ async function handleSyncAll(message) {
 
     await stampClone(clone, runtimeTemplate, pageNumber, total, sourceCacheResult.cache);
     applyTemplatePosition(clone, runtimeTemplate, targetNode);
+    conflicts += await countTemplateConflictsOnTarget(clone, targetNode, runtimeTemplate.id);
+    await reorderManagedTemplateInstancesOnTarget(targetNode, storage);
 
     storage.templateInstanceMap[mapKey] = clone.id;
     synced += 1;
@@ -1717,6 +1805,7 @@ async function handleSyncAll(message) {
     type: "sync-complete",
     synced,
     removed,
+    conflicts,
     missingSources: sourceCacheResult.missing.length
   });
 }
