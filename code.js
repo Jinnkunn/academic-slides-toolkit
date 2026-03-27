@@ -3,6 +3,13 @@ const EQUATION_KIND = "equation";
 const RUNTIME_VERSION = "dev-20250318-01";
 let allPagesLoadedPromise = null;
 
+function createPluginError(errorKey, fallbackMessage, vars) {
+  const error = new Error(fallbackMessage);
+  error.errorKey = errorKey;
+  error.errorVars = vars || {};
+  return error;
+}
+
 function emptyStorage() {
   return {
     templates: {},
@@ -111,13 +118,13 @@ function getPluginData(node, key) {
 }
 
 function normalizeRanges(rawRanges, variableName, throwOnError = true) {
-  const fail = (message) => {
-    if (throwOnError) throw new Error(message);
+  const fail = (errorKey, fallbackMessage, vars) => {
+    if (throwOnError) throw createPluginError(errorKey, fallbackMessage, vars);
     return null;
   };
 
   if (!Array.isArray(rawRanges)) {
-    return fail(`变量「${variableName}」缺少范围配置`) || [];
+    return fail("errorVarMissingRanges", `变量「${variableName}」缺少范围配置`, { name: variableName }) || [];
   }
 
   const ranges = rawRanges.map((range, index) => {
@@ -125,10 +132,10 @@ function normalizeRanges(rawRanges, variableName, throwOnError = true) {
     const to = Number(range && range.to);
 
     if (!Number.isFinite(from) || from < 1 || !Number.isFinite(to) || to < 1) {
-      return fail(`变量「${variableName}」的第 ${index + 1} 个范围页码无效`);
+      return fail("errorVarInvalidRange", `变量「${variableName}」的第 ${index + 1} 个范围页码无效`, { name: variableName, index: index + 1 });
     }
     if (from > to) {
-      return fail(`变量「${variableName}」的第 ${index + 1} 个范围起始页不能大于结束页`);
+      return fail("errorVarRangeOrder", `变量「${variableName}」的第 ${index + 1} 个范围起始页不能大于结束页`, { name: variableName, index: index + 1 });
     }
 
     return {
@@ -148,7 +155,7 @@ function normalizeRanges(rawRanges, variableName, throwOnError = true) {
 
   for (let i = 1; i < ranges.length; i++) {
     if (ranges[i].from <= ranges[i - 1].to) {
-      return fail(`变量「${variableName}」的范围发生重叠`) || [];
+      return fail("errorVarRangeOverlap", `变量「${variableName}」的范围发生重叠`, { name: variableName }) || [];
     }
   }
 
@@ -156,8 +163,8 @@ function normalizeRanges(rawRanges, variableName, throwOnError = true) {
 }
 
 function normalizeVariables(rawVariables, throwOnError = true) {
-  const fail = (message) => {
-    if (throwOnError) throw new Error(message);
+  const fail = (errorKey, fallbackMessage, vars) => {
+    if (throwOnError) throw createPluginError(errorKey, fallbackMessage, vars);
     return null;
   };
 
@@ -176,24 +183,24 @@ function normalizeVariables(rawVariables, throwOnError = true) {
       : null;
 
     if (!name) {
-      const error = fail(`第 ${index + 1} 个变量缺少名称`);
+      const error = fail("errorVarMissingName", `第 ${index + 1} 个变量缺少名称`, { index: index + 1 });
       if (error === null) continue;
     }
     if (!path || path.some((part) => !Number.isInteger(part) || part < 0)) {
-      const error = fail(`变量「${name || index + 1}」的目标节点无效`);
+      const error = fail("errorVarInvalidNode", `变量「${name || index + 1}」的目标节点无效`, { name: name || String(index + 1) });
       if (error === null) continue;
     }
 
     const pathKey = JSON.stringify(path);
     if (seenPaths.has(pathKey)) {
-      const error = fail(`变量「${name}」重复绑定了同一个节点`);
+      const error = fail("errorVarDuplicateBinding", `变量「${name}」重复绑定了同一个节点`, { name: name });
       if (error === null) continue;
     }
     seenPaths.add(pathKey);
 
     const ranges = normalizeRanges((variable && variable.ranges) || [], name, throwOnError);
     if (!ranges.length) {
-      const error = fail(`变量「${name}」至少需要一个范围`);
+      const error = fail("errorVarNeedsRange", `变量「${name}」至少需要一个范围`, { name: name });
       if (error === null) continue;
     }
 
@@ -649,7 +656,7 @@ function markEquationRoot(node, equationData) {
 function normalizeEquationPayload(message) {
   const latex = String(message && message.latex ? message.latex : "").trim();
   if (!latex) {
-    throw new Error("公式内容不能为空");
+    throw createPluginError("errorEmptyLatex", "公式内容不能为空");
   }
 
   const fontSize = Number(message && message.fontSize);
@@ -910,7 +917,7 @@ function resolveRuntimeVariables(templateNode, template, messageVariables) {
   for (let index = 0; index < variables.length; index++) {
     const targetNode = getNodeByPath(templateNode, variables[index].path);
     if (!isTextNode(targetNode)) {
-      throw new Error("变量「" + variables[index].name + "」绑定的节点不是文本节点");
+      throw createPluginError("errorVarNotTextNode", "变量「" + variables[index].name + "」绑定的节点不是文本节点", { name: variables[index].name });
     }
   }
 
@@ -1068,6 +1075,16 @@ async function loadAllFonts(node) {
     try {
       if (node.fontName !== figma.mixed) {
         await figma.loadFontAsync(node.fontName);
+      } else if (typeof node.getStyledTextSegments === "function") {
+        const segments = node.getStyledTextSegments(["fontName"]);
+        const seen = new Set();
+        for (let i = 0; i < segments.length; i++) {
+          const key = JSON.stringify(segments[i].fontName);
+          if (!seen.has(key)) {
+            seen.add(key);
+            await figma.loadFontAsync(segments[i].fontName);
+          }
+        }
       } else {
         const seen = new Set();
         for (let index = 0; index < node.characters.length; index++) {
@@ -1138,6 +1155,7 @@ async function applyVariables(clonedRoot, variables, pageNumber) {
 
 async function resolveVariableSourceNode(template, storage, path, sourcePageId) {
   let templateInstanceRoot = null;
+  let isTemporaryClone = false;
   const templateRoot = await getTemplateNode(template);
 
   if (sourcePageId === template.pageId) {
@@ -1146,16 +1164,21 @@ async function resolveVariableSourceNode(template, storage, path, sourcePageId) 
     templateInstanceRoot = await getManagedTemplateInstanceForTarget(template.id, sourcePageId, storage);
     if (!templateInstanceRoot && templateRoot) {
       templateInstanceRoot = templateRoot.clone();
+      isTemporaryClone = true;
     }
   }
 
-  if (!templateInstanceRoot) return null;
-  return getNodeByPath(templateInstanceRoot, path);
+  if (!templateInstanceRoot) return { node: null, tempClone: null };
+  return {
+    node: getNodeByPath(templateInstanceRoot, path),
+    tempClone: isTemporaryClone ? templateInstanceRoot : null
+  };
 }
 
 async function buildVariableSourceCache(template, storage) {
   const cache = new Map();
   const missing = [];
+  const tempClones = [];
 
   for (const variable of template.variables || []) {
     for (const range of variable.ranges || []) {
@@ -1164,14 +1187,15 @@ async function buildVariableSourceCache(template, storage) {
       const cacheKey = `${JSON.stringify(variable.path)}::${range.sourcePageId}`;
       if (cache.has(cacheKey)) continue;
 
-      const sourceNode = await resolveVariableSourceNode(
+      const result = await resolveVariableSourceNode(
         template,
         storage,
         variable.path,
         range.sourcePageId
       );
+      if (result.tempClone) tempClones.push(result.tempClone);
 
-      if (!isTextNode(sourceNode)) {
+      if (!isTextNode(result.node)) {
         missing.push({
           variableName: variable.name,
           sourcePageId: range.sourcePageId
@@ -1179,7 +1203,13 @@ async function buildVariableSourceCache(template, storage) {
         continue;
       }
 
-      cache.set(cacheKey, sourceNode.clone());
+      cache.set(cacheKey, result.node.clone());
+    }
+  }
+
+  for (let i = 0; i < tempClones.length; i++) {
+    if (tempClones[i] && typeof tempClones[i].remove === "function") {
+      tempClones[i].remove();
     }
   }
 
@@ -1330,8 +1360,8 @@ function listPages() {
   }));
 }
 
-function postError(message) {
-  figma.ui.postMessage({ type: "error", message });
+function postError(message, errorKey, errorVars) {
+  figma.ui.postMessage({ type: "error", message, errorKey: errorKey || "", errorVars: errorVars || {} });
 }
 
 function ensureCustomTotal(totalMode, customTotal) {
@@ -1339,7 +1369,7 @@ function ensureCustomTotal(totalMode, customTotal) {
 
   const value = Number(customTotal);
   if (!Number.isFinite(value) || value < 1) {
-    throw new Error("自定义总页数必须是大于 0 的数字");
+    throw createPluginError("errorInvalidCustomTotal", "自定义总页数必须是大于 0 的数字");
   }
 
   return value;
@@ -1373,13 +1403,13 @@ async function handleGetPages(message) {
 async function handleInsertEquation(message) {
   const equation = normalizeEquationPayload(message);
   if (!equation.svgMarkup) {
-    postError("公式 SVG 为空，请先等待预览完成");
+    postError("公式 SVG 为空，请先等待预览完成", "errorEmptySvg");
     return;
   }
 
   const target = getEquationInsertionTarget();
   if (!target || typeof target.appendChild !== "function") {
-    postError("当前无法定位插入位置");
+    postError("当前无法定位插入位置", "errorNoInsertTarget");
     return;
   }
 
@@ -1413,17 +1443,17 @@ async function handleUpdateEquation(message) {
   const equationRoot = findEquationRoot(currentNode);
 
   if (!equationRoot) {
-    postError("未找到可更新的公式节点");
+    postError("未找到可更新的公式节点", "errorNoEquationToUpdate");
     return;
   }
   if (!equation.svgMarkup) {
-    postError("公式 SVG 为空，请先等待预览完成");
+    postError("公式 SVG 为空，请先等待预览完成", "errorEmptySvg");
     return;
   }
 
   const parent = equationRoot.parent;
   if (!parent || typeof parent.insertChild !== "function") {
-    postError("当前公式节点无法被更新");
+    postError("当前公式节点无法被更新", "errorEquationCannotUpdate");
     return;
   }
 
@@ -1465,7 +1495,7 @@ async function handleDeleteEquation(message) {
   const equationRoot = findEquationRoot(currentNode);
 
   if (!equationRoot) {
-    postError("未找到可删除的公式节点");
+    postError("未找到可删除的公式节点", "errorNoEquationToDelete");
     return;
   }
 
@@ -1527,7 +1557,7 @@ async function handleClearEquationNumbering(message) {
 async function handleSetTemplate(message) {
   const node = await figma.getNodeByIdAsync(message.nodeId);
   if (!node) {
-    postError("找不到选中的模板区域节点");
+    postError("找不到选中的模板区域节点", "errorTemplateNodeNotFound");
     return;
   }
 
@@ -1552,13 +1582,13 @@ async function handleSetTemplate(message) {
   if (message.pageIndicatorId) {
     indicatorPath = getNodePath(node, message.pageIndicatorId);
     if (indicatorPath === null) {
-      postError("页码节点必须位于模板区域内部");
+      postError("页码节点必须位于模板区域内部", "errorIndicatorOutsideTemplate");
       return;
     }
 
     const indicatorNode = getNodeByPath(node, indicatorPath);
     if (!isTextNode(indicatorNode)) {
-      postError("页码节点必须是文本节点");
+      postError("页码节点必须是文本节点", "errorIndicatorNotText");
       return;
     }
 
@@ -1573,7 +1603,10 @@ async function handleSetTemplate(message) {
   const containerNode = getTargetById(containerId);
 
   if (!containerId) {
-    postError(isSlidesEditor() ? "请在某一页 Slide 内选择模板区域节点" : "找不到当前页面");
+    postError(
+      isSlidesEditor() ? "请在某一页 Slide 内选择模板区域节点" : "找不到当前页面",
+      isSlidesEditor() ? "errorSelectSlideTemplate" : "errorCurrentPageNotFound"
+    );
     return;
   }
 
@@ -1626,7 +1659,7 @@ async function handleUpdateTemplateConfig(message) {
   const template = storage.templates[message.templateId];
 
   if (!template) {
-    postError("模板不存在");
+    postError("模板不存在", "errorTemplateNotExist");
     return;
   }
 
@@ -1642,19 +1675,19 @@ async function handleUpdateTemplateConfig(message) {
   await handleGetTemplates();
 }
 
-async function handleApplyToAll(message) {
+async function applyTemplateToTargets(message, mode) {
   await ensureAllPagesLoaded();
   const storage = await getStorage();
   const template = storage.templates[message.templateId];
 
   if (!template) {
-    postError("模板不存在");
+    postError("模板不存在", "errorTemplateNotExist");
     return;
   }
 
   const templateNode = await getTemplateNode(template);
   if (!templateNode) {
-    postError("模板节点已被删除，请重新保存模板");
+    postError("模板节点已被删除，请重新保存模板", "errorTemplateDeleted");
     return;
   }
 
@@ -1675,109 +1708,40 @@ async function handleApplyToAll(message) {
   const sourceCacheResult = await buildVariableSourceCache(runtimeTemplate, storage);
   let applied = 0;
   let skipped = 0;
-  let conflicts = 0;
-
-  for (const target of targets) {
-    const pageNumber = pageNumberMap[target.id];
-    const mapKey = getTemplateInstanceMapKey(template.id, target.id);
-    const existingTemplateInstance = await getManagedTemplateInstanceForTarget(template.id, target.id, storage);
-
-    if (pageNumber === null) {
-      const removedOnExcluded = await removeManagedTemplateInstancesOnTarget(template.id, target.id, storage);
-      if (!removedOnExcluded && message.overwrite && existingTemplateInstance) {
-        existingTemplateInstance.remove();
-        delete storage.templateInstanceMap[mapKey];
-      }
-      skipped += 1;
-      continue;
-    }
-
-    if (target.id === runtimeTemplate.pageId) {
-      skipped += 1;
-      continue;
-    }
-
-    if (existingTemplateInstance && !message.overwrite) {
-      skipped += 1;
-      continue;
-    }
-
-    const targetNode = await getLoadedTargetById(target.id);
-
-    if (existingTemplateInstance && message.overwrite) {
-      await removeManagedTemplateInstancesOnTarget(template.id, target.id, storage);
-    }
-
-    const clone = templateNode.clone();
-    targetNode.appendChild(clone);
-    markManagedTemplateRoot(clone, runtimeTemplate.id);
-
-    await stampClone(clone, runtimeTemplate, pageNumber, total, sourceCacheResult.cache);
-    applyTemplatePosition(clone, runtimeTemplate, targetNode);
-    conflicts += await countTemplateConflictsOnTarget(clone, targetNode, runtimeTemplate.id);
-    await reorderManagedTemplateInstancesOnTarget(targetNode, storage);
-
-    storage.templateInstanceMap[mapKey] = clone.id;
-    applied += 1;
-  }
-
-  await saveStorage(storage);
-  figma.ui.postMessage({
-    type: "apply-complete",
-    applied,
-    skipped,
-    total: targets.length,
-    conflicts,
-    missingSources: sourceCacheResult.missing.length
-  });
-}
-
-async function handleSyncAll(message) {
-  await ensureAllPagesLoaded();
-  const storage = await getStorage();
-  const template = storage.templates[message.templateId];
-
-  if (!template) {
-    postError("模板不存在");
-    return;
-  }
-
-  const templateNode = await getTemplateNode(template);
-  if (!templateNode) {
-    postError("模板节点已被删除，请重新保存模板");
-    return;
-  }
-
-  const runtimeTemplate = normalizeTemplate(template.id, template);
-  runtimeTemplate.variables = resolveRuntimeVariables(templateNode, runtimeTemplate, message.variables);
-  if (Array.isArray(message.excludedPageIds)) {
-    runtimeTemplate.excludedPageIds = message.excludedPageIds.filter((id) => typeof id === "string");
-  }
-  if (message.pageNumberStart !== undefined && message.pageNumberStart !== null) {
-    runtimeTemplate.pageNumberStart = Number.isFinite(Number(message.pageNumberStart))
-      ? Number(message.pageNumberStart)
-      : 1;
-  }
-
-  const targets = getAllTargets();
-  const pageNumberMap = buildPageNumberMap(targets, runtimeTemplate);
-  const total = effectiveTotal(targets, runtimeTemplate);
-  const sourceCacheResult = await buildVariableSourceCache(runtimeTemplate, storage);
-  let synced = 0;
   let removed = 0;
   let conflicts = 0;
 
-  for (const target of targets) {
+  for (let i = 0; i < targets.length; i++) {
+    const target = targets[i];
     const pageNumber = pageNumberMap[target.id];
     const mapKey = getTemplateInstanceMapKey(template.id, target.id);
     const existingTemplateInstance = await getManagedTemplateInstanceForTarget(template.id, target.id, storage);
 
+    if (targets.length > 5 && i % 5 === 0) {
+      figma.ui.postMessage({ type: "progress", current: i, total: targets.length, operation: mode });
+    }
+
     if (pageNumber === null) {
-      removed += await removeManagedTemplateInstancesOnTarget(template.id, target.id, storage);
+      if (mode === "apply") {
+        const removedOnExcluded = await removeManagedTemplateInstancesOnTarget(template.id, target.id, storage);
+        if (!removedOnExcluded && message.overwrite && existingTemplateInstance) {
+          existingTemplateInstance.remove();
+          delete storage.templateInstanceMap[mapKey];
+        }
+        skipped += 1;
+      } else {
+        removed += await removeManagedTemplateInstancesOnTarget(template.id, target.id, storage);
+      }
       continue;
     }
 
     if (target.id === runtimeTemplate.pageId) {
+      if (mode === "apply") skipped += 1;
+      continue;
+    }
+
+    if (mode === "apply" && existingTemplateInstance && !message.overwrite) {
+      skipped += 1;
       continue;
     }
 
@@ -1797,17 +1761,52 @@ async function handleSyncAll(message) {
     await reorderManagedTemplateInstancesOnTarget(targetNode, storage);
 
     storage.templateInstanceMap[mapKey] = clone.id;
-    synced += 1;
+    applied += 1;
   }
 
+  cleanStaleMapEntries(storage);
   await saveStorage(storage);
-  figma.ui.postMessage({
-    type: "sync-complete",
-    synced,
-    removed,
-    conflicts,
-    missingSources: sourceCacheResult.missing.length
-  });
+
+  if (mode === "apply") {
+    figma.ui.postMessage({
+      type: "apply-complete",
+      applied,
+      skipped,
+      total: targets.length,
+      conflicts,
+      missingSources: sourceCacheResult.missing.length
+    });
+  } else {
+    figma.ui.postMessage({
+      type: "sync-complete",
+      synced: applied,
+      removed,
+      conflicts,
+      missingSources: sourceCacheResult.missing.length
+    });
+  }
+}
+
+function cleanStaleMapEntries(storage) {
+  const validTemplateIds = new Set(Object.keys(storage.templates));
+  const keysToRemove = [];
+  for (const key of Object.keys(storage.templateInstanceMap)) {
+    const templateId = key.split("::")[0];
+    if (!validTemplateIds.has(templateId)) {
+      keysToRemove.push(key);
+    }
+  }
+  for (let i = 0; i < keysToRemove.length; i++) {
+    delete storage.templateInstanceMap[keysToRemove[i]];
+  }
+}
+
+async function handleApplyToAll(message) {
+  await applyTemplateToTargets(message, "apply");
+}
+
+async function handleSyncAll(message) {
+  await applyTemplateToTargets(message, "sync");
 }
 
 async function handleRemoveTemplateInstances(templateId) {
@@ -1816,7 +1815,7 @@ async function handleRemoveTemplateInstances(templateId) {
   const template = storage.templates[templateId];
 
   if (!template) {
-    postError("模板不存在");
+    postError("模板不存在", "errorTemplateNotExist");
     return;
   }
 
@@ -1861,7 +1860,7 @@ async function handleDeleteTemplate(templateId) {
   const template = storage.templates[templateId];
 
   if (!template) {
-    postError("模板不存在");
+    postError("模板不存在", "errorTemplateNotExist");
     return;
   }
 
@@ -1874,6 +1873,7 @@ async function handleDeleteTemplate(templateId) {
   await removeManagedTemplateInstancesFromScene(templateId, storage);
 
   delete storage.templates[templateId];
+  cleanStaleMapEntries(storage);
 
   await saveStorage(storage);
   await handleGetTemplates();
@@ -1884,41 +1884,44 @@ async function handleCheckVariableCandidate(message) {
   const storage = await getStorage();
   const template = storage.templates[message.templateId];
 
-  const fail = (reason) => {
-    figma.ui.postMessage({ type: "variable-candidate", isValid: false, reason });
+  const fail = (reason, reasonKey) => {
+    figma.ui.postMessage({ type: "variable-candidate", isValid: false, reason, reasonKey: reasonKey || "" });
   };
 
   if (!template) {
-    fail("模板不存在");
+    fail("模板不存在", "errorTemplateNotExist");
     return;
   }
 
   const templateNode = await getTemplateNode(template);
   if (!templateNode) {
-    fail("模板节点不存在，请重新保存模板");
+    fail("模板节点不存在，请重新保存模板", "errorTemplateNodeMissing");
     return;
   }
 
   const selection = figma.currentPage.selection;
   if (selection.length !== 1) {
-    fail("请在 Figma 中只选中一个文本节点");
+    fail("请在 Figma 中只选中一个文本节点", "errorSelectOneTextNode");
     return;
   }
 
   if (getContainerIdForNode(selection[0]) !== template.pageId) {
-    fail(isSlidesEditor() ? "请切换到模板所在的 Slide 后再检测变量节点" : "请切换到模板所在页面后再检测变量节点");
+    fail(
+      isSlidesEditor() ? "请切换到模板所在的 Slide 后再检测变量节点" : "请切换到模板所在页面后再检测变量节点",
+      isSlidesEditor() ? "errorSwitchToTemplateSlide" : "errorSwitchToTemplatePage"
+    );
     return;
   }
 
   const targetNode = selection[0];
   if (!isTextNode(targetNode)) {
-    fail("变量只支持文本节点");
+    fail("变量只支持文本节点", "errorVarOnlyText");
     return;
   }
 
   const path = getNodePath(templateNode, targetNode.id);
   if (path === null) {
-    fail("所选节点不在该模板内部");
+    fail("所选节点不在该模板内部", "errorNodeNotInTemplate");
     return;
   }
 
@@ -1938,13 +1941,13 @@ async function handleSaveVariables(message) {
   const template = storage.templates[message.templateId];
 
   if (!template) {
-    postError("模板不存在");
+    postError("模板不存在", "errorTemplateNotExist");
     return;
   }
 
   const templateNode = await getTemplateNode(template);
   if (!templateNode) {
-    postError("模板节点不存在，请重新保存模板");
+    postError("模板节点不存在，请重新保存模板", "errorTemplateNodeMissing");
     return;
   }
 
@@ -1953,7 +1956,7 @@ async function handleSaveVariables(message) {
   for (const variable of variables) {
     const targetNode = getNodeByPath(templateNode, variable.path);
     if (!isTextNode(targetNode)) {
-      postError(`变量「${variable.name}」绑定的节点不是文本节点`);
+      postError(`变量「${variable.name}」绑定的节点不是文本节点`, "errorVarNotTextNode", { name: variable.name });
       return;
     }
   }
@@ -2026,7 +2029,13 @@ figma.ui.onmessage = async (message) => {
         break;
     }
   } catch (error) {
-    postError(`操作失败：${error && error.message ? error.message : String(error)}`);
+    const errorKey = error && error.errorKey ? error.errorKey : "";
+    const errorVars = error && error.errorVars ? error.errorVars : {};
+    postError(
+      `操作失败：${error && error.message ? error.message : String(error)}`,
+      errorKey || "errorOperationFailed",
+      errorVars
+    );
     console.error("[AcademicSlides]", error);
   }
 };

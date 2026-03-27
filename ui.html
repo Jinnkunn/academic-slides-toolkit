@@ -117,13 +117,19 @@ input[type=number]::-webkit-outer-spin-button {
 
 .module-tabs {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   margin-top: 10px;
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #f3f4f6;
+}
+
+.module-tab.disabled-tab {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .module-tab {
@@ -1046,12 +1052,15 @@ window.MathJax = {
     ready: function() {
       MathJax.startup.defaultReady();
       window.__mathjaxReady = true;
+      window.__mathjaxFailed = false;
       window.dispatchEvent(new Event("mathjax-ready"));
     }
   }
 };
+window.__mathjaxFailed = false;
 </script>
-<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"
+  onerror="window.__mathjaxFailed=true;window.dispatchEvent(new Event('mathjax-error'))"></script>
 </head>
 <body>
 <div class="sidebar">
@@ -1066,8 +1075,6 @@ window.MathJax = {
     <div class="module-tabs">
       <button class="module-tab active" id="module-tab-deck" type="button" onclick="setModule('deck')">Deck</button>
       <button class="module-tab" id="module-tab-equations" type="button" onclick="setModule('equations')">Equations</button>
-      <button class="module-tab" id="module-tab-components" type="button" onclick="setModule('components')">Components</button>
-      <button class="module-tab" id="module-tab-assets" type="button" onclick="setModule('assets')">Assets</button>
       <button class="module-tab" id="module-tab-settings" type="button" onclick="setModule('settings')">Settings</button>
     </div>
     <div class="module-context">
@@ -1568,7 +1575,7 @@ window.MathJax = {
       </div>
     </div>
 
-    <div class="module-view is-hidden" id="module-view-components">
+    <div class="module-view is-hidden" id="module-view-components" style="display:none !important">
       <div class="subnav">
         <button class="subnav-btn active" id="components-subnav-library" type="button" onclick="setModule('components')">Library</button>
         <button class="subnav-btn" id="components-subnav-figure" type="button" onclick="openOverlayPage('components', 'figure')">Figure</button>
@@ -1641,7 +1648,7 @@ window.MathJax = {
       </div>
     </div>
 
-    <div class="module-view is-hidden" id="module-view-assets">
+    <div class="module-view is-hidden" id="module-view-assets" style="display:none !important">
       <div class="subnav">
         <button class="subnav-btn active" id="assets-subnav-references" type="button" onclick="setModule('assets')">References</button>
         <button class="subnav-btn" id="assets-subnav-charts" type="button" onclick="openOverlayPage('assets', 'charts')">Charts</button>
@@ -2006,7 +2013,39 @@ const I18N = {
     pageExampleTwoDigits: "两位数，例如 02/33",
     pageExampleOf: "英文格式，例如 3 of 10",
     pageExamplePage: "前缀格式，例如 Page 3",
-    selectionIdPrefix: "id "
+    selectionIdPrefix: "id ",
+    mathjaxLoadFailed: "MathJax 加载失败，公式功能不可用。请检查网络连接后重新打开插件。",
+    progressMessage: "正在处理第 {current}/{total} 页...",
+    errorEmptyLatex: "公式内容不能为空",
+    errorEmptySvg: "公式 SVG 为空，请先等待预览完成",
+    errorNoInsertTarget: "当前无法定位插入位置",
+    errorNoEquationToUpdate: "未找到可更新的公式节点",
+    errorEquationCannotUpdate: "当前公式节点无法被更新",
+    errorNoEquationToDelete: "未找到可删除的公式节点",
+    errorTemplateNodeNotFound: "找不到选中的模板区域节点",
+    errorInvalidCustomTotal: "自定义总页数必须是大于 0 的数字",
+    errorIndicatorOutsideTemplate: "页码节点必须位于模板区域内部",
+    errorIndicatorNotText: "页码节点必须是文本节点",
+    errorSelectSlideTemplate: "请在某一页 Slide 内选择模板区域节点",
+    errorCurrentPageNotFound: "找不到当前页面",
+    errorTemplateNotExist: "模板不存在",
+    errorTemplateDeleted: "模板节点已被删除，请重新保存模板",
+    errorTemplateNodeMissing: "模板节点不存在，请重新保存模板",
+    errorVarMissingRanges: "变量「{name}」缺少范围配置",
+    errorVarInvalidRange: "变量「{name}」的第 {index} 个范围页码无效",
+    errorVarRangeOrder: "变量「{name}」的第 {index} 个范围起始页不能大于结束页",
+    errorVarRangeOverlap: "变量「{name}」的范围发生重叠",
+    errorVarMissingName: "第 {index} 个变量缺少名称",
+    errorVarInvalidNode: "变量「{name}」的目标节点无效",
+    errorVarDuplicateBinding: "变量「{name}」重复绑定了同一个节点",
+    errorVarNeedsRange: "变量「{name}」至少需要一个范围",
+    errorVarNotTextNode: "变量「{name}」绑定的节点不是文本节点",
+    errorSelectOneTextNode: "请在 Figma 中只选中一个文本节点",
+    errorSwitchToTemplateSlide: "请切换到模板所在的 Slide 后再检测变量节点",
+    errorSwitchToTemplatePage: "请切换到模板所在页面后再检测变量节点",
+    errorVarOnlyText: "变量只支持文本节点",
+    errorNodeNotInTemplate: "所选节点不在该模板内部",
+    errorOperationFailed: "操作失败"
   },
   "en-US": {
     topSubtitle: "Academic Slides Toolkit",
@@ -2231,7 +2270,39 @@ const I18N = {
     pageExampleTwoDigits: "Two digits, e.g. 02/33",
     pageExampleOf: "English, e.g. 3 of 10",
     pageExamplePage: "Prefix, e.g. Page 3",
-    selectionIdPrefix: "id "
+    selectionIdPrefix: "id ",
+    mathjaxLoadFailed: "MathJax failed to load. Equation features are unavailable. Check your network and reopen the plugin.",
+    progressMessage: "Processing slide {current}/{total}...",
+    errorEmptyLatex: "Equation content cannot be empty",
+    errorEmptySvg: "Equation SVG is empty. Wait for the preview to complete first",
+    errorNoInsertTarget: "Cannot determine insertion position",
+    errorNoEquationToUpdate: "No updatable equation node found",
+    errorEquationCannotUpdate: "This equation node cannot be updated",
+    errorNoEquationToDelete: "No deletable equation node found",
+    errorTemplateNodeNotFound: "Cannot find the selected template region node",
+    errorInvalidCustomTotal: "Custom total must be a number greater than 0",
+    errorIndicatorOutsideTemplate: "Page number node must be inside the template region",
+    errorIndicatorNotText: "Page number node must be a text node",
+    errorSelectSlideTemplate: "Please select a template region node inside a Slide",
+    errorCurrentPageNotFound: "Current page not found",
+    errorTemplateNotExist: "Template does not exist",
+    errorTemplateDeleted: "Template node has been deleted. Please re-save the template",
+    errorTemplateNodeMissing: "Template node does not exist. Please re-save the template",
+    errorVarMissingRanges: "Variable \"{name}\" is missing range configuration",
+    errorVarInvalidRange: "Range #{index} of variable \"{name}\" has invalid page numbers",
+    errorVarRangeOrder: "Range #{index} of variable \"{name}\": start page cannot exceed end page",
+    errorVarRangeOverlap: "Ranges of variable \"{name}\" overlap",
+    errorVarMissingName: "Variable #{index} is missing a name",
+    errorVarInvalidNode: "Target node of variable \"{name}\" is invalid",
+    errorVarDuplicateBinding: "Variable \"{name}\" is bound to a node already in use",
+    errorVarNeedsRange: "Variable \"{name}\" needs at least one range",
+    errorVarNotTextNode: "The node bound by variable \"{name}\" is not a text node",
+    errorSelectOneTextNode: "Please select exactly one text node in Figma",
+    errorSwitchToTemplateSlide: "Switch to the template's Slide before detecting variable nodes",
+    errorSwitchToTemplatePage: "Switch to the template's page before detecting variable nodes",
+    errorVarOnlyText: "Variables only support text nodes",
+    errorNodeNotInTemplate: "Selected node is not inside this template",
+    errorOperationFailed: "Operation failed"
   }
 };
 
@@ -2246,7 +2317,11 @@ function esc(value) {
 function escJs(value) {
   return String(value)
     .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\\'");
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
+    .replace(/</g, "\\x3c");
 }
 
 function getMessages() {
@@ -2582,7 +2657,7 @@ function renderBindNote() {
   }
 
   if (lastSourceCandidateError) {
-    note.textContent = localizeBackendMessage(lastSourceCandidateError);
+    note.textContent = lastSourceCandidateError;
     note.style.color = "var(--danger)";
     if (confirmBox) confirmBox.style.display = "none";
     return;
@@ -2653,42 +2728,22 @@ function onSyncStartNumberInput(value) {
   syncDraftStartNumber = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
 }
 
-function localizeBackendMessage(message) {
-  const raw = String(message || "");
+function localizeBackendMessage(message, errorKey, errorVars) {
+  if (errorKey) {
+    var messages = getMessages();
+    if (Object.prototype.hasOwnProperty.call(messages, errorKey)) {
+      return t(errorKey, errorVars || {});
+    }
+  }
+
+  var raw = String(message || "");
   if (!raw) return raw;
   if (currentLanguage !== "en-US") return raw;
 
-  const map = {
-    "模板不存在": "Template not found",
-    "找不到选中的模板区域节点": "Selected template region node not found",
-    "页码节点必须位于模板区域内部": "The page-number node must be inside the template region",
-    "页码节点必须是文本节点": "The page-number node must be a text node",
-    "请在某一页 Slide 内选择模板区域节点": "Select a template region inside a slide",
-    "找不到当前页面": "Current page not found",
-    "模板节点已被删除，请重新保存模板": "The template node was deleted. Save the template again",
-    "模板节点不存在，请重新保存模板": "The template node no longer exists. Save the template again",
-    "所选节点不在该模板内部": "The selected node is not inside this template",
-    "公式 SVG 为空，请先等待预览完成": "Equation SVG is empty. Wait for the preview to finish",
-    "当前无法定位插入位置": "Could not determine where to insert the equation",
-    "未找到可更新的公式节点": "Could not find the equation node to update",
-    "当前公式节点无法被更新": "The current equation node cannot be updated",
-    "未找到可删除的公式节点": "Could not find the equation node to delete",
-    "当前选中的节点无效": "The current selection is not valid",
-    "变量绑定失败": "Source binding failed"
-  };
-
-  if (map[raw]) return map[raw];
   if (raw.indexOf("操作失败：") === 0) {
-    return "Operation failed: " + localizeBackendMessage(raw.slice(5));
+    return t("errorOperationFailed") + ": " + localizeBackendMessage(raw.slice(5), "", {});
   }
-  return raw
-    .replace(/变量「(.+?)」绑定的节点不是文本节点/g, 'Source "$1" is not bound to a text node')
-    .replace(/变量「(.+?)」至少需要一个范围/g, 'Source "$1" needs at least one range')
-    .replace(/变量「(.+?)」的范围发生重叠/g, 'Source "$1" has overlapping ranges')
-    .replace(/变量「(.+?)」的目标节点无效/g, 'Source "$1" targets an invalid node')
-    .replace(/变量「(.+?)」重复绑定了同一个节点/g, 'Source "$1" binds the same node twice')
-    .replace(/变量「(.+?)」的第 (\d+) 个范围页码无效/g, 'Source "$1" has an invalid page range at item $2')
-    .replace(/变量「(.+?)」的第 (\d+) 个范围起始页不能大于结束页/g, 'Source "$1" has a range whose start is greater than its end at item $2');
+  return raw;
 }
 
 function getErrorToastScope() {
@@ -2796,6 +2851,7 @@ function getEquationFormValues(prefix) {
 }
 
 function renderEquationSvg(latex, displayMode, fontSize, color) {
+  if (window.__mathjaxFailed) return "";
   if (!mathJaxReady() || !latex) return "";
 
   try {
@@ -3508,7 +3564,7 @@ function onVarCandidate(message) {
   const confirmBox = document.getElementById("bind-confirm");
 
   if (!message.isValid) {
-    lastSourceCandidateError = message.reason || "当前选中的节点无效";
+    lastSourceCandidateError = localizeBackendMessage(message.reason || "当前选中的节点无效", message.reasonKey, {});
     pendingSource = null;
     renderBindNote();
     return;
@@ -4067,7 +4123,10 @@ window.onmessage = function(event) {
       onVariablesSaved();
       break;
     case "error":
-      toast(getErrorToastScope(), localizeBackendMessage(message.message), "error");
+      toast(getErrorToastScope(), localizeBackendMessage(message.message, message.errorKey, message.errorVars), "error");
+      break;
+    case "progress":
+      toast(getErrorToastScope(), t("progressMessage", { current: message.current + 1, total: message.total }), "info");
       break;
     default:
       break;
@@ -4085,6 +4144,9 @@ document.addEventListener("keydown", function(event) {
 window.addEventListener("mathjax-ready", function() {
   renderEquationInsertPreview();
   renderEquationSelectedPreview();
+});
+window.addEventListener("mathjax-error", function() {
+  toast("template", t("mathjaxLoadFailed"), "error");
 });
 </script>
 </body>
