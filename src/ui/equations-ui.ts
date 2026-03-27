@@ -134,7 +134,9 @@ export function renderEquationSelectedPreview(): void {
 // ---------------------------------------------------------------------------
 // onEquationSelection  (ui.html ~line 2916)
 // ---------------------------------------------------------------------------
-export function onEquationSelection(equation: any): void {
+export function onEquationSelection(equation: any, autoNavigate: boolean = false): void {
+  const hadEquation = !!state.selectedEquation;
+  const hasEquation = !!equation;
   state.selectedEquation = equation || null;
   const status = document.getElementById("equation-selected-status")!;
   const input = document.getElementById("equation-selected-input") as HTMLInputElement;
@@ -174,6 +176,17 @@ export function onEquationSelection(equation: any): void {
   updateButton.disabled = false;
   deleteButton.disabled = false;
   renderEquationSelectedPreview();
+
+  // Auto-navigate to equation editor when user selects a plugin equation
+  if (autoNavigate && hasEquation && !hadEquation) {
+    // Only auto-switch if we're not already viewing this equation
+    if (state.currentModule !== "equations" ||
+        !state.activeOverlay ||
+        state.activeOverlay.pageId !== "selected") {
+      openOverlayPage("equations", "selected");
+      toast("equations-overview", t("equationsAutoOpened"), "info");
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

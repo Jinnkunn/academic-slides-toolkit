@@ -82,7 +82,7 @@ window.onmessage = (event: MessageEvent) => {
   switch (message.type) {
     case "selection":
       onSelection(message.node);
-      onEquationSelection(message.equation);
+      onEquationSelection(message.equation, true);
       break;
     case "templates":
       onTemplates(message.templates);
