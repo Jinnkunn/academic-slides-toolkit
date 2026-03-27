@@ -48,7 +48,8 @@ This project started from a footer-sync plugin and is being expanded into a broa
 Notes:
 
 - The plugin now uses the in-product name `Academic Slides Toolkit`.
-- The plugin `id` is still `footer-sync-slides` for now, to avoid unnecessary identifier churn while the product is still evolving.
+- The plugin manifest `id` is now `academic-slides-toolkit`.
+- If you previously imported this project under `footer-sync-slides`, Figma will treat this as a new plugin identity. Existing `clientStorage` data and plugin-private metadata from the old id will not automatically carry over.
 
 ## Usage
 

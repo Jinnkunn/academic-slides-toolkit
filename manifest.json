@@ -1,6 +1,6 @@
 {
   "name": "Academic Slides Toolkit",
-  "id": "footer-sync-slides",
+  "id": "academic-slides-toolkit",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
