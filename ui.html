@@ -1198,10 +1198,23 @@ window.MathJax = {
 
                 <div class="field">
                   <label for="tpl-kind" id="tpl-kind-label">模板类型</label>
-                  <select id="tpl-kind" onchange="setTemplateSummary()">
+                  <select id="tpl-kind" onchange="onTemplateKindChange()">
                     <option id="tpl-kind-header" value="header">页眉</option>
                     <option id="tpl-kind-footer" value="footer">页脚</option>
                     <option id="tpl-kind-custom" value="custom">自定义</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="tpl-placement" id="tpl-placement-label">锚点布局</label>
+                  <select id="tpl-placement" onchange="setTemplateSummary()">
+                    <option id="tpl-placement-top-left" value="top-left">顶部左对齐</option>
+                    <option id="tpl-placement-top-center" value="top-center">顶部居中</option>
+                    <option id="tpl-placement-top-right" value="top-right">顶部右对齐</option>
+                    <option id="tpl-placement-bottom-left" value="bottom-left">底部左对齐</option>
+                    <option id="tpl-placement-bottom-center" value="bottom-center">底部居中</option>
+                    <option id="tpl-placement-bottom-right" value="bottom-right">底部右对齐</option>
+                    <option id="tpl-placement-custom" value="custom">自定义位置</option>
                   </select>
                 </div>
 
@@ -1782,14 +1795,22 @@ const I18N = {
     templateKindHeader: "页眉",
     templateKindFooter: "页脚",
     templateKindCustom: "自定义",
+    placementLabel: "锚点布局",
+    placementTopLeft: "顶部左对齐",
+    placementTopCenter: "顶部居中",
+    placementTopRight: "顶部右对齐",
+    placementBottomLeft: "底部左对齐",
+    placementBottomCenter: "底部居中",
+    placementBottomRight: "底部右对齐",
+    placementCustom: "自定义位置",
     pageFormatLabel: "页码格式",
     totalTitle: "总页数",
     totalHint: "仅 `%t` 会用到总页数。",
     totalModeAuto: "自动统计启用该模板的 slides",
     totalModeCustom: "手动指定总页数",
-    templateSummaryDefault: "将保存为 {kind} 模板。",
-    templateSummaryWithNumber: "页码节点：{name}",
-    templateSummaryWithoutNumber: "不生成自动页码",
+    templateSummaryDefault: "将保存为 {kind} 模板 · {placement}",
+    templateSummaryWithNumber: "{kind} 模板 · {placement} · 页码节点：{name}",
+    templateSummaryWithoutNumber: "{kind} 模板 · {placement} · 不生成自动页码",
     saveTemplate: "保存为模板",
     sourceTitle: "内容来源",
     sourceDesc: "绑定可同步文字。",
@@ -1989,14 +2010,22 @@ const I18N = {
     templateKindHeader: "Header",
     templateKindFooter: "Footer",
     templateKindCustom: "Custom",
+    placementLabel: "Placement",
+    placementTopLeft: "Top Left",
+    placementTopCenter: "Top Center",
+    placementTopRight: "Top Right",
+    placementBottomLeft: "Bottom Left",
+    placementBottomCenter: "Bottom Center",
+    placementBottomRight: "Bottom Right",
+    placementCustom: "Custom Position",
     pageFormatLabel: "Page Number Format",
     totalTitle: "Total Count",
     totalHint: "Used only with `%t`.",
     totalModeAuto: "Auto count slides with this template enabled",
     totalModeCustom: "Set total count manually",
-    templateSummaryDefault: "This will save a {kind} template.",
-    templateSummaryWithNumber: "Page-number node: {name}",
-    templateSummaryWithoutNumber: "No auto page numbers",
+    templateSummaryDefault: "This will save a {kind} template · {placement}",
+    templateSummaryWithNumber: "{kind} template · {placement} · page-number node: {name}",
+    templateSummaryWithoutNumber: "{kind} template · {placement} · no auto page numbers",
     saveTemplate: "Save Template",
     sourceTitle: "Content Sources",
     sourceDesc: "Bind syncable text.",
@@ -2249,6 +2278,14 @@ function renderStaticLanguage() {
   setText("tpl-kind-header", "templateKindHeader");
   setText("tpl-kind-footer", "templateKindFooter");
   setText("tpl-kind-custom", "templateKindCustom");
+  setText("tpl-placement-label", "placementLabel");
+  setText("tpl-placement-top-left", "placementTopLeft");
+  setText("tpl-placement-top-center", "placementTopCenter");
+  setText("tpl-placement-top-right", "placementTopRight");
+  setText("tpl-placement-bottom-left", "placementBottomLeft");
+  setText("tpl-placement-bottom-center", "placementBottomCenter");
+  setText("tpl-placement-bottom-right", "placementBottomRight");
+  setText("tpl-placement-custom", "placementCustom");
   setText("page-fmt-label", "pageFormatLabel");
   setText("total-title", "totalTitle");
   setText("total-hint", "totalHint");
@@ -2937,6 +2974,22 @@ function getTemplateKindLabel(kind) {
   return t("templateKindCustom");
 }
 
+function getPlacementLabel(mode) {
+  if (mode === "top-left") return t("placementTopLeft");
+  if (mode === "top-center") return t("placementTopCenter");
+  if (mode === "top-right") return t("placementTopRight");
+  if (mode === "bottom-left") return t("placementBottomLeft");
+  if (mode === "bottom-center") return t("placementBottomCenter");
+  if (mode === "bottom-right") return t("placementBottomRight");
+  return t("placementCustom");
+}
+
+function getDefaultPlacementForKind(kind) {
+  if (kind === "header") return "top-center";
+  if (kind === "footer") return "bottom-center";
+  return "custom";
+}
+
 function updateTemplateSelector() {
   const select = document.getElementById("active-template-select");
   const previous = select.value;
@@ -3057,27 +3110,47 @@ function getCurrentTemplateKind() {
   return select ? (select.value || "custom") : "custom";
 }
 
+function getCurrentPlacementMode() {
+  const select = document.getElementById("tpl-placement");
+  return select ? (select.value || "custom") : "custom";
+}
+
+function onTemplateKindChange() {
+  const placementSelect = document.getElementById("tpl-placement");
+  if (placementSelect) {
+    placementSelect.value = getDefaultPlacementForKind(getCurrentTemplateKind());
+  }
+  setTemplateSummary();
+}
+
 function setTemplateSummary() {
   const summary = document.getElementById("template-summary");
   const kind = getTemplateKindLabel(getCurrentTemplateKind());
+  const placement = getPlacementLabel(getCurrentPlacementMode());
   if (!selectedNodeId) {
-    summary.textContent = t("templateSummaryDefault", { kind: kind });
+    summary.textContent = t("templateSummaryDefault", { kind: kind, placement: placement });
     return;
   }
 
   if (selectedIndicId) {
     const node = findNodeInTree(selectedNodeData, selectedIndicId);
     summary.textContent = t("templateSummaryWithNumber", {
+      kind: kind,
+      placement: placement,
       name: node ? node.name : "TEXT"
     });
   } else {
-    summary.textContent = t("templateSummaryWithoutNumber");
+    summary.textContent = t("templateSummaryWithoutNumber", {
+      kind: kind,
+      placement: placement
+    });
   }
 }
 
 function applyTemplateConfigToForm(template, fallbackName) {
   const nameInput = document.getElementById("tpl-name");
   const kindSelect = document.getElementById("tpl-kind");
+  const placementSelect = document.getElementById("tpl-placement");
   const pageFormat = document.getElementById("page-fmt");
   const totalMode = document.getElementById("total-mode");
   const customTotal = document.getElementById("custom-total");
@@ -3085,6 +3158,9 @@ function applyTemplateConfigToForm(template, fallbackName) {
 
   nameInput.value = template ? (template.name || fallbackName || "") : (fallbackName || "");
   kindSelect.value = template && template.templateKind ? template.templateKind : "custom";
+  placementSelect.value = template && template.placement && template.placement.mode
+    ? template.placement.mode
+    : getDefaultPlacementForKind(kindSelect.value);
   pageFormat.value = template && template.pageFormat ? template.pageFormat : "%n";
   totalMode.value = template && template.totalMode === "custom" ? "custom" : "auto";
   customTotal.value = template && template.customTotal ? String(template.customTotal) : "10";
@@ -3190,6 +3266,7 @@ function saveTemplate() {
     pageIndicatorId: selectedIndicId || null,
     name: document.getElementById("tpl-name").value.trim() || null,
     templateKind: getCurrentTemplateKind(),
+    placementMode: getCurrentPlacementMode(),
     pageFormat: document.getElementById("page-fmt").value,
     totalMode: totalMode,
     customTotal: customTotal

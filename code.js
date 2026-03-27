@@ -26,6 +26,54 @@ function normalizeTemplateKind(rawKind) {
   return rawKind === "header" || rawKind === "footer" ? rawKind : "custom";
 }
 
+function normalizePlacementMode(rawMode) {
+  const allowed = new Set([
+    "top-left",
+    "top-center",
+    "top-right",
+    "bottom-left",
+    "bottom-center",
+    "bottom-right",
+    "custom"
+  ]);
+  return allowed.has(rawMode) ? rawMode : "custom";
+}
+
+function defaultPlacementModeForKind(templateKind) {
+  if (templateKind === "header") return "top-center";
+  if (templateKind === "footer") return "bottom-center";
+  return "custom";
+}
+
+function normalizePlacement(rawPlacement, fallbackPosition, templateKind) {
+  const fallback = fallbackPosition && typeof fallbackPosition === "object"
+    ? {
+        x: Number(fallbackPosition.x) || 0,
+        y: Number(fallbackPosition.y) || 0
+      }
+    : { x: 0, y: 0 };
+  const source = rawPlacement && typeof rawPlacement === "object" ? rawPlacement : {};
+  const mode = normalizePlacementMode(source.mode || defaultPlacementModeForKind(templateKind));
+
+  if (mode === "custom") {
+    return {
+      mode,
+      x: Number(source.x) || fallback.x,
+      y: Number(source.y) || fallback.y,
+      offsetX: 0,
+      offsetY: 0
+    };
+  }
+
+  return {
+    mode,
+    x: fallback.x,
+    y: fallback.y,
+    offsetX: Number(source.offsetX) || 0,
+    offsetY: Number(source.offsetY) || 0
+  };
+}
+
 function getPluginData(node, key) {
   return node && typeof node.getPluginData === "function" ? node.getPluginData(key) : "";
 }
@@ -131,19 +179,22 @@ function normalizeVariables(rawVariables, throwOnError = true) {
 
 function normalizeTemplate(templateId, template) {
   const source = template && typeof template === "object" ? template : {};
+  const templateKind = normalizeTemplateKind(source.templateKind);
+  const position = source.position && typeof source.position === "object"
+    ? {
+        x: Number(source.position.x) || 0,
+        y: Number(source.position.y) || 0
+      }
+    : { x: 0, y: 0 };
 
   return {
     id: source.id || templateId,
     name: typeof source.name === "string" && source.name.trim() ? source.name.trim() : "区域模板",
     nodeId: typeof source.nodeId === "string" ? source.nodeId : "",
     pageId: typeof source.pageId === "string" ? source.pageId : "",
-    templateKind: normalizeTemplateKind(source.templateKind),
-    position: source.position && typeof source.position === "object"
-      ? {
-          x: Number(source.position.x) || 0,
-          y: Number(source.position.y) || 0
-        }
-      : { x: 0, y: 0 },
+    templateKind,
+    position,
+    placement: normalizePlacement(source.placement, position, templateKind),
     indicatorPath: Array.isArray(source.indicatorPath) ? source.indicatorPath.map((part) => Number(part)) : null,
     pageFormat: typeof source.pageFormat === "string" && source.pageFormat ? source.pageFormat : "%n",
     totalMode: source.totalMode === "custom" ? "custom" : "auto",
@@ -342,10 +393,130 @@ function getPositionInContainer(node, container) {
   };
 }
 
-function applyTemplatePosition(node, template) {
-  if (!node || !template || !template.position) return;
-  node.x = Number(template.position.x) || 0;
-  node.y = Number(template.position.y) || 0;
+function buildPlacement(node, container, mode, fallbackPosition) {
+  const position = fallbackPosition || getPositionInContainer(node, container);
+  const containerWidth = Number(container && container.width) || 0;
+  const containerHeight = Number(container && container.height) || 0;
+  const nodeWidth = Number(node && node.width) || 0;
+  const nodeHeight = Number(node && node.height) || 0;
+  const normalizedMode = normalizePlacementMode(mode);
+
+  if (normalizedMode === "custom") {
+    return {
+      mode: normalizedMode,
+      x: Number(position.x) || 0,
+      y: Number(position.y) || 0,
+      offsetX: 0,
+      offsetY: 0
+    };
+  }
+
+  const centeredX = (containerWidth - nodeWidth) / 2;
+  const rightX = containerWidth - nodeWidth;
+  const bottomY = containerHeight - nodeHeight;
+
+  switch (normalizedMode) {
+    case "top-left":
+      return { mode: normalizedMode, x: position.x, y: position.y, offsetX: position.x, offsetY: position.y };
+    case "top-center":
+      return {
+        mode: normalizedMode,
+        x: position.x,
+        y: position.y,
+        offsetX: (Number(position.x) || 0) - centeredX,
+        offsetY: Number(position.y) || 0
+      };
+    case "top-right":
+      return {
+        mode: normalizedMode,
+        x: position.x,
+        y: position.y,
+        offsetX: rightX - (Number(position.x) || 0),
+        offsetY: Number(position.y) || 0
+      };
+    case "bottom-left":
+      return {
+        mode: normalizedMode,
+        x: position.x,
+        y: position.y,
+        offsetX: Number(position.x) || 0,
+        offsetY: bottomY - (Number(position.y) || 0)
+      };
+    case "bottom-center":
+      return {
+        mode: normalizedMode,
+        x: position.x,
+        y: position.y,
+        offsetX: (Number(position.x) || 0) - centeredX,
+        offsetY: bottomY - (Number(position.y) || 0)
+      };
+    case "bottom-right":
+      return {
+        mode: normalizedMode,
+        x: position.x,
+        y: position.y,
+        offsetX: rightX - (Number(position.x) || 0),
+        offsetY: bottomY - (Number(position.y) || 0)
+      };
+    default:
+      return {
+        mode: "custom",
+        x: Number(position.x) || 0,
+        y: Number(position.y) || 0,
+        offsetX: 0,
+        offsetY: 0
+      };
+  }
+}
+
+function applyTemplatePosition(node, template, container) {
+  if (!node || !template) return;
+
+  const placement = normalizePlacement(template.placement, template.position, template.templateKind);
+  if (placement.mode === "custom" || !container) {
+    node.x = Number(placement.x) || 0;
+    node.y = Number(placement.y) || 0;
+    return;
+  }
+
+  const containerWidth = Number(container.width) || 0;
+  const containerHeight = Number(container.height) || 0;
+  const nodeWidth = Number(node.width) || 0;
+  const nodeHeight = Number(node.height) || 0;
+  const centeredX = (containerWidth - nodeWidth) / 2;
+  const rightX = containerWidth - nodeWidth;
+  const bottomY = containerHeight - nodeHeight;
+
+  switch (placement.mode) {
+    case "top-left":
+      node.x = Number(placement.offsetX) || 0;
+      node.y = Number(placement.offsetY) || 0;
+      break;
+    case "top-center":
+      node.x = centeredX + (Number(placement.offsetX) || 0);
+      node.y = Number(placement.offsetY) || 0;
+      break;
+    case "top-right":
+      node.x = rightX - (Number(placement.offsetX) || 0);
+      node.y = Number(placement.offsetY) || 0;
+      break;
+    case "bottom-left":
+      node.x = Number(placement.offsetX) || 0;
+      node.y = bottomY - (Number(placement.offsetY) || 0);
+      break;
+    case "bottom-center":
+      node.x = centeredX + (Number(placement.offsetX) || 0);
+      node.y = bottomY - (Number(placement.offsetY) || 0);
+      break;
+    case "bottom-right":
+      node.x = rightX - (Number(placement.offsetX) || 0);
+      node.y = bottomY - (Number(placement.offsetY) || 0);
+      break;
+    default:
+      node.x = Number(placement.x) || 0;
+      node.y = Number(placement.y) || 0;
+      break;
+  }
 }
 
 function getAbsolutePosition(node) {
@@ -1265,13 +1436,22 @@ async function handleSetTemplate(message) {
     return;
   }
 
+  const templateKind = normalizeTemplateKind(message.templateKind || (previousTemplate && previousTemplate.templateKind));
+  const position = getPositionInContainer(node, containerNode);
+  const placementMode = normalizePlacementMode(
+    message.placementMode
+    || (previousTemplate && previousTemplate.placement && previousTemplate.placement.mode)
+    || defaultPlacementModeForKind(templateKind)
+  );
+
   storage.templates[nextTemplateId] = {
     id: nextTemplateId,
     name: String(message.name || (previousTemplate && previousTemplate.name) || node.name).trim() || node.name,
     nodeId: node.id,
     pageId: containerId,
-    templateKind: normalizeTemplateKind(message.templateKind || (previousTemplate && previousTemplate.templateKind)),
-    position: getPositionInContainer(node, containerNode),
+    templateKind: templateKind,
+    position: position,
+    placement: buildPlacement(node, containerNode, placementMode, position),
     indicatorPath,
     pageFormat: message.pageFormat || (previousTemplate && previousTemplate.pageFormat) || "%n",
     totalMode: nextTotalMode,
@@ -1383,10 +1563,10 @@ async function handleApplyToAll(message) {
 
     const clone = templateNode.clone();
     targetNode.appendChild(clone);
-    applyTemplatePosition(clone, runtimeTemplate);
     markManagedTemplateRoot(clone, runtimeTemplate.id);
 
     await stampClone(clone, runtimeTemplate, pageNumber, total, sourceCacheResult.cache);
+    applyTemplatePosition(clone, runtimeTemplate, targetNode);
 
     storage.templateInstanceMap[mapKey] = clone.id;
     applied += 1;
@@ -1458,10 +1638,10 @@ async function handleSyncAll(message) {
 
     const clone = templateNode.clone();
     targetNode.appendChild(clone);
-    applyTemplatePosition(clone, runtimeTemplate);
     markManagedTemplateRoot(clone, runtimeTemplate.id);
 
     await stampClone(clone, runtimeTemplate, pageNumber, total, sourceCacheResult.cache);
+    applyTemplatePosition(clone, runtimeTemplate, targetNode);
 
     storage.templateInstanceMap[mapKey] = clone.id;
     synced += 1;
