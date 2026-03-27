@@ -45,6 +45,38 @@ function defaultPlacementModeForKind(templateKind) {
   return "custom";
 }
 
+function normalizeLayoutArea(rawArea) {
+  return rawArea === "safe-area" ? "safe-area" : "slide";
+}
+
+function defaultSafeAreaMargins() {
+  return {
+    top: 24,
+    right: 32,
+    bottom: 24,
+    left: 32
+  };
+}
+
+function normalizeSafeArea(rawSafeArea) {
+  const fallback = defaultSafeAreaMargins();
+  const source = rawSafeArea && typeof rawSafeArea === "object" ? rawSafeArea : {};
+  return {
+    top: Math.max(0, Number(source.top) || fallback.top),
+    right: Math.max(0, Number(source.right) || fallback.right),
+    bottom: Math.max(0, Number(source.bottom) || fallback.bottom),
+    left: Math.max(0, Number(source.left) || fallback.left)
+  };
+}
+
+function normalizeLayoutFrame(rawLayoutFrame) {
+  const source = rawLayoutFrame && typeof rawLayoutFrame === "object" ? rawLayoutFrame : {};
+  return {
+    area: normalizeLayoutArea(source.area),
+    safeArea: normalizeSafeArea(source.safeArea)
+  };
+}
+
 function normalizePlacement(rawPlacement, fallbackPosition, templateKind) {
   const fallback = fallbackPosition && typeof fallbackPosition === "object"
     ? {
@@ -194,6 +226,7 @@ function normalizeTemplate(templateId, template) {
     pageId: typeof source.pageId === "string" ? source.pageId : "",
     templateKind,
     position,
+    layoutFrame: normalizeLayoutFrame(source.layoutFrame),
     placement: normalizePlacement(source.placement, position, templateKind),
     indicatorPath: Array.isArray(source.indicatorPath) ? source.indicatorPath.map((part) => Number(part)) : null,
     pageFormat: typeof source.pageFormat === "string" && source.pageFormat ? source.pageFormat : "%n",
@@ -393,70 +426,98 @@ function getPositionInContainer(node, container) {
   };
 }
 
-function buildPlacement(node, container, mode, fallbackPosition) {
+function getLayoutRect(container, layoutFrame) {
+  const width = Number(container && container.width) || 0;
+  const height = Number(container && container.height) || 0;
+  const frame = normalizeLayoutFrame(layoutFrame);
+
+  if (frame.area !== "safe-area") {
+    return {
+      x: 0,
+      y: 0,
+      width,
+      height
+    };
+  }
+
+  const left = frame.safeArea.left;
+  const top = frame.safeArea.top;
+  const right = frame.safeArea.right;
+  const bottom = frame.safeArea.bottom;
+
+  return {
+    x: left,
+    y: top,
+    width: Math.max(0, width - left - right),
+    height: Math.max(0, height - top - bottom)
+  };
+}
+
+function buildPlacement(node, container, mode, fallbackPosition, layoutFrame) {
   const position = fallbackPosition || getPositionInContainer(node, container);
-  const containerWidth = Number(container && container.width) || 0;
-  const containerHeight = Number(container && container.height) || 0;
   const nodeWidth = Number(node && node.width) || 0;
   const nodeHeight = Number(node && node.height) || 0;
   const normalizedMode = normalizePlacementMode(mode);
+  const rect = getLayoutRect(container, layoutFrame);
+  const relativeX = (Number(position.x) || 0) - rect.x;
+  const relativeY = (Number(position.y) || 0) - rect.y;
 
   if (normalizedMode === "custom") {
     return {
       mode: normalizedMode,
-      x: Number(position.x) || 0,
-      y: Number(position.y) || 0,
+      x: relativeX,
+      y: relativeY,
       offsetX: 0,
       offsetY: 0
     };
   }
 
-  const centeredX = (containerWidth - nodeWidth) / 2;
-  const rightX = containerWidth - nodeWidth;
-  const bottomY = containerHeight - nodeHeight;
+  const centeredX = (rect.width - nodeWidth) / 2;
+  const rightX = rect.width - nodeWidth;
+  const bottomY = rect.height - nodeHeight;
 
   switch (normalizedMode) {
     case "top-left":
-      return { mode: normalizedMode, x: position.x, y: position.y, offsetX: position.x, offsetY: position.y };
+      return { mode: normalizedMode, x: relativeX, y: relativeY, offsetX: relativeX, offsetY: relativeY };
     case "top-center":
       return {
         mode: normalizedMode,
-        x: position.x,
-        y: position.y,
-        offsetX: (Number(position.x) || 0) - centeredX,
-        offsetY: Number(position.y) || 0
+        x: relativeX,
+        y: relativeY,
+        offsetX: relativeX - centeredX,
+        offsetY: relativeY
       };
     case "top-right":
       return {
         mode: normalizedMode,
-        x: position.x,
-        y: position.y,
-        offsetX: rightX - (Number(position.x) || 0),
-        offsetY: Number(position.y) || 0
+        x: relativeX,
+        y: relativeY,
+        offsetX: rightX - relativeX,
+        offsetY: relativeY
       };
     case "bottom-left":
       return {
         mode: normalizedMode,
-        x: position.x,
-        y: position.y,
-        offsetX: Number(position.x) || 0,
-        offsetY: bottomY - (Number(position.y) || 0)
+        x: relativeX,
+        y: relativeY,
+        offsetX: relativeX,
+        offsetY: bottomY - relativeY
       };
     case "bottom-center":
       return {
         mode: normalizedMode,
-        x: position.x,
-        y: position.y,
-        offsetX: (Number(position.x) || 0) - centeredX,
-        offsetY: bottomY - (Number(position.y) || 0)
+        x: relativeX,
+        y: relativeY,
+        offsetX: relativeX - centeredX,
+        offsetY: bottomY - relativeY
       };
     case "bottom-right":
       return {
         mode: normalizedMode,
-        x: position.x,
-        y: position.y,
-        offsetX: rightX - (Number(position.x) || 0),
-        offsetY: bottomY - (Number(position.y) || 0)
+        x: relativeX,
+        y: relativeY,
+        offsetX: rightX - relativeX,
+        offsetY: bottomY - relativeY
       };
     default:
       return {
@@ -473,44 +534,43 @@ function applyTemplatePosition(node, template, container) {
   if (!node || !template) return;
 
   const placement = normalizePlacement(template.placement, template.position, template.templateKind);
+  const rect = getLayoutRect(container, template.layoutFrame);
   if (placement.mode === "custom" || !container) {
-    node.x = Number(placement.x) || 0;
-    node.y = Number(placement.y) || 0;
+    node.x = rect.x + (Number(placement.x) || 0);
+    node.y = rect.y + (Number(placement.y) || 0);
     return;
   }
 
-  const containerWidth = Number(container.width) || 0;
-  const containerHeight = Number(container.height) || 0;
   const nodeWidth = Number(node.width) || 0;
   const nodeHeight = Number(node.height) || 0;
-  const centeredX = (containerWidth - nodeWidth) / 2;
-  const rightX = containerWidth - nodeWidth;
-  const bottomY = containerHeight - nodeHeight;
+  const centeredX = (rect.width - nodeWidth) / 2;
+  const rightX = rect.width - nodeWidth;
+  const bottomY = rect.height - nodeHeight;
 
   switch (placement.mode) {
     case "top-left":
-      node.x = Number(placement.offsetX) || 0;
-      node.y = Number(placement.offsetY) || 0;
+      node.x = rect.x + (Number(placement.offsetX) || 0);
+      node.y = rect.y + (Number(placement.offsetY) || 0);
       break;
     case "top-center":
-      node.x = centeredX + (Number(placement.offsetX) || 0);
-      node.y = Number(placement.offsetY) || 0;
+      node.x = rect.x + centeredX + (Number(placement.offsetX) || 0);
+      node.y = rect.y + (Number(placement.offsetY) || 0);
       break;
     case "top-right":
-      node.x = rightX - (Number(placement.offsetX) || 0);
-      node.y = Number(placement.offsetY) || 0;
+      node.x = rect.x + rightX - (Number(placement.offsetX) || 0);
+      node.y = rect.y + (Number(placement.offsetY) || 0);
       break;
     case "bottom-left":
-      node.x = Number(placement.offsetX) || 0;
-      node.y = bottomY - (Number(placement.offsetY) || 0);
+      node.x = rect.x + (Number(placement.offsetX) || 0);
+      node.y = rect.y + bottomY - (Number(placement.offsetY) || 0);
       break;
     case "bottom-center":
-      node.x = centeredX + (Number(placement.offsetX) || 0);
-      node.y = bottomY - (Number(placement.offsetY) || 0);
+      node.x = rect.x + centeredX + (Number(placement.offsetX) || 0);
+      node.y = rect.y + bottomY - (Number(placement.offsetY) || 0);
       break;
     case "bottom-right":
-      node.x = rightX - (Number(placement.offsetX) || 0);
-      node.y = bottomY - (Number(placement.offsetY) || 0);
+      node.x = rect.x + rightX - (Number(placement.offsetX) || 0);
+      node.y = rect.y + bottomY - (Number(placement.offsetY) || 0);
       break;
     default:
       node.x = Number(placement.x) || 0;
@@ -1438,6 +1498,10 @@ async function handleSetTemplate(message) {
 
   const templateKind = normalizeTemplateKind(message.templateKind || (previousTemplate && previousTemplate.templateKind));
   const position = getPositionInContainer(node, containerNode);
+  const layoutFrame = normalizeLayoutFrame({
+    area: message.layoutArea || (previousTemplate && previousTemplate.layoutFrame && previousTemplate.layoutFrame.area),
+    safeArea: message.safeArea || (previousTemplate && previousTemplate.layoutFrame && previousTemplate.layoutFrame.safeArea)
+  });
   const placementMode = normalizePlacementMode(
     message.placementMode
     || (previousTemplate && previousTemplate.placement && previousTemplate.placement.mode)
@@ -1451,7 +1515,8 @@ async function handleSetTemplate(message) {
     pageId: containerId,
     templateKind: templateKind,
     position: position,
-    placement: buildPlacement(node, containerNode, placementMode, position),
+    layoutFrame: layoutFrame,
+    placement: buildPlacement(node, containerNode, placementMode, position, layoutFrame),
     indicatorPath,
     pageFormat: message.pageFormat || (previousTemplate && previousTemplate.pageFormat) || "%n",
     totalMode: nextTotalMode,

@@ -1218,6 +1218,39 @@ window.MathJax = {
                   </select>
                 </div>
 
+                <div class="field">
+                  <label for="tpl-layout-area" id="tpl-layout-area-label">布局参照</label>
+                  <select id="tpl-layout-area" onchange="onLayoutAreaChange()">
+                    <option id="tpl-layout-area-slide" value="slide">整页边界</option>
+                    <option id="tpl-layout-area-safe-area" value="safe-area">Safe Area</option>
+                  </select>
+                </div>
+
+                <div id="layout-safe-area-wrap" style="display:none;" class="stack">
+                  <div class="field-title" id="safe-area-title">Safe Area 边距</div>
+                  <div class="hint" id="safe-area-hint">Header / Footer 会相对这个内容区进行对齐，而不是直接贴 slide 边缘。</div>
+                  <div class="row">
+                    <div class="grow field">
+                      <label for="safe-area-top" id="safe-area-top-label">上</label>
+                      <input type="number" id="safe-area-top" min="0" value="24" oninput="setTemplateSummary()">
+                    </div>
+                    <div class="grow field">
+                      <label for="safe-area-right" id="safe-area-right-label">右</label>
+                      <input type="number" id="safe-area-right" min="0" value="32" oninput="setTemplateSummary()">
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="grow field">
+                      <label for="safe-area-bottom" id="safe-area-bottom-label">下</label>
+                      <input type="number" id="safe-area-bottom" min="0" value="24" oninput="setTemplateSummary()">
+                    </div>
+                    <div class="grow field">
+                      <label for="safe-area-left" id="safe-area-left-label">左</label>
+                      <input type="number" id="safe-area-left" min="0" value="32" oninput="setTemplateSummary()">
+                    </div>
+                  </div>
+                </div>
+
                 <div class="field" id="fmt-row" style="display:none;">
                   <label for="page-fmt" id="page-fmt-label">页码格式</label>
                   <select id="page-fmt">
@@ -1803,14 +1836,23 @@ const I18N = {
     placementBottomCenter: "底部居中",
     placementBottomRight: "底部右对齐",
     placementCustom: "自定义位置",
+    layoutAreaLabel: "布局参照",
+    layoutAreaSlide: "整页边界",
+    layoutAreaSafeArea: "Safe Area",
+    safeAreaTitle: "Safe Area 边距",
+    safeAreaHint: "Header / Footer 会相对这个内容区进行对齐，而不是直接贴 slide 边缘。",
+    safeAreaTop: "上",
+    safeAreaRight: "右",
+    safeAreaBottom: "下",
+    safeAreaLeft: "左",
     pageFormatLabel: "页码格式",
     totalTitle: "总页数",
     totalHint: "仅 `%t` 会用到总页数。",
     totalModeAuto: "自动统计启用该模板的 slides",
     totalModeCustom: "手动指定总页数",
-    templateSummaryDefault: "将保存为 {kind} 模板 · {placement}",
-    templateSummaryWithNumber: "{kind} 模板 · {placement} · 页码节点：{name}",
-    templateSummaryWithoutNumber: "{kind} 模板 · {placement} · 不生成自动页码",
+    templateSummaryDefault: "将保存为 {kind} 模板 · {placement} · {area}",
+    templateSummaryWithNumber: "{kind} 模板 · {placement} · {area} · 页码节点：{name}",
+    templateSummaryWithoutNumber: "{kind} 模板 · {placement} · {area} · 不生成自动页码",
     saveTemplate: "保存为模板",
     sourceTitle: "内容来源",
     sourceDesc: "绑定可同步文字。",
@@ -2018,14 +2060,23 @@ const I18N = {
     placementBottomCenter: "Bottom Center",
     placementBottomRight: "Bottom Right",
     placementCustom: "Custom Position",
+    layoutAreaLabel: "Layout Area",
+    layoutAreaSlide: "Slide Bounds",
+    layoutAreaSafeArea: "Safe Area",
+    safeAreaTitle: "Safe Area Margins",
+    safeAreaHint: "Header / footer alignment will use this content box instead of the raw slide edges.",
+    safeAreaTop: "Top",
+    safeAreaRight: "Right",
+    safeAreaBottom: "Bottom",
+    safeAreaLeft: "Left",
     pageFormatLabel: "Page Number Format",
     totalTitle: "Total Count",
     totalHint: "Used only with `%t`.",
     totalModeAuto: "Auto count slides with this template enabled",
     totalModeCustom: "Set total count manually",
-    templateSummaryDefault: "This will save a {kind} template · {placement}",
-    templateSummaryWithNumber: "{kind} template · {placement} · page-number node: {name}",
-    templateSummaryWithoutNumber: "{kind} template · {placement} · no auto page numbers",
+    templateSummaryDefault: "This will save a {kind} template · {placement} · {area}",
+    templateSummaryWithNumber: "{kind} template · {placement} · {area} · page-number node: {name}",
+    templateSummaryWithoutNumber: "{kind} template · {placement} · {area} · no auto page numbers",
     saveTemplate: "Save Template",
     sourceTitle: "Content Sources",
     sourceDesc: "Bind syncable text.",
@@ -2286,6 +2337,15 @@ function renderStaticLanguage() {
   setText("tpl-placement-bottom-center", "placementBottomCenter");
   setText("tpl-placement-bottom-right", "placementBottomRight");
   setText("tpl-placement-custom", "placementCustom");
+  setText("tpl-layout-area-label", "layoutAreaLabel");
+  setText("tpl-layout-area-slide", "layoutAreaSlide");
+  setText("tpl-layout-area-safe-area", "layoutAreaSafeArea");
+  setText("safe-area-title", "safeAreaTitle");
+  setText("safe-area-hint", "safeAreaHint");
+  setText("safe-area-top-label", "safeAreaTop");
+  setText("safe-area-right-label", "safeAreaRight");
+  setText("safe-area-bottom-label", "safeAreaBottom");
+  setText("safe-area-left-label", "safeAreaLeft");
   setText("page-fmt-label", "pageFormatLabel");
   setText("total-title", "totalTitle");
   setText("total-hint", "totalHint");
@@ -2990,6 +3050,10 @@ function getDefaultPlacementForKind(kind) {
   return "custom";
 }
 
+function getLayoutAreaLabel(area) {
+  return area === "safe-area" ? t("layoutAreaSafeArea") : t("layoutAreaSlide");
+}
+
 function updateTemplateSelector() {
   const select = document.getElementById("active-template-select");
   const previous = select.value;
@@ -3115,11 +3179,37 @@ function getCurrentPlacementMode() {
   return select ? (select.value || "custom") : "custom";
 }
 
+function getCurrentLayoutArea() {
+  const select = document.getElementById("tpl-layout-area");
+  return select ? (select.value || "slide") : "slide";
+}
+
+function getCurrentSafeArea() {
+  return {
+    top: Math.max(0, parseInt(document.getElementById("safe-area-top").value, 10) || 0),
+    right: Math.max(0, parseInt(document.getElementById("safe-area-right").value, 10) || 0),
+    bottom: Math.max(0, parseInt(document.getElementById("safe-area-bottom").value, 10) || 0),
+    left: Math.max(0, parseInt(document.getElementById("safe-area-left").value, 10) || 0)
+  };
+}
+
+function renderLayoutAreaControls() {
+  const wrap = document.getElementById("layout-safe-area-wrap");
+  if (!wrap) return;
+  wrap.style.display = getCurrentLayoutArea() === "safe-area" ? "grid" : "none";
+}
+
 function onTemplateKindChange() {
   const placementSelect = document.getElementById("tpl-placement");
   if (placementSelect) {
     placementSelect.value = getDefaultPlacementForKind(getCurrentTemplateKind());
   }
+  renderLayoutAreaControls();
+  setTemplateSummary();
+}
+
+function onLayoutAreaChange() {
+  renderLayoutAreaControls();
   setTemplateSummary();
 }
 
@@ -3127,8 +3217,9 @@ function setTemplateSummary() {
   const summary = document.getElementById("template-summary");
   const kind = getTemplateKindLabel(getCurrentTemplateKind());
   const placement = getPlacementLabel(getCurrentPlacementMode());
+  const area = getLayoutAreaLabel(getCurrentLayoutArea());
   if (!selectedNodeId) {
-    summary.textContent = t("templateSummaryDefault", { kind: kind, placement: placement });
+    summary.textContent = t("templateSummaryDefault", { kind: kind, placement: placement, area: area });
     return;
   }
 
@@ -3137,12 +3228,14 @@ function setTemplateSummary() {
     summary.textContent = t("templateSummaryWithNumber", {
       kind: kind,
       placement: placement,
+      area: area,
       name: node ? node.name : "TEXT"
     });
   } else {
     summary.textContent = t("templateSummaryWithoutNumber", {
       kind: kind,
-      placement: placement
+      placement: placement,
+      area: area
     });
   }
 }
@@ -3151,20 +3244,32 @@ function applyTemplateConfigToForm(template, fallbackName) {
   const nameInput = document.getElementById("tpl-name");
   const kindSelect = document.getElementById("tpl-kind");
   const placementSelect = document.getElementById("tpl-placement");
+  const layoutAreaSelect = document.getElementById("tpl-layout-area");
   const pageFormat = document.getElementById("page-fmt");
   const totalMode = document.getElementById("total-mode");
   const customTotal = document.getElementById("custom-total");
   const customTotalWrap = document.getElementById("custom-total-wrap");
+  const safeArea = template && template.layoutFrame && template.layoutFrame.safeArea
+    ? template.layoutFrame.safeArea
+    : { top: 24, right: 32, bottom: 24, left: 32 };
 
   nameInput.value = template ? (template.name || fallbackName || "") : (fallbackName || "");
   kindSelect.value = template && template.templateKind ? template.templateKind : "custom";
   placementSelect.value = template && template.placement && template.placement.mode
     ? template.placement.mode
     : getDefaultPlacementForKind(kindSelect.value);
+  layoutAreaSelect.value = template && template.layoutFrame && template.layoutFrame.area
+    ? template.layoutFrame.area
+    : "slide";
+  document.getElementById("safe-area-top").value = String(safeArea.top);
+  document.getElementById("safe-area-right").value = String(safeArea.right);
+  document.getElementById("safe-area-bottom").value = String(safeArea.bottom);
+  document.getElementById("safe-area-left").value = String(safeArea.left);
   pageFormat.value = template && template.pageFormat ? template.pageFormat : "%n";
   totalMode.value = template && template.totalMode === "custom" ? "custom" : "auto";
   customTotal.value = template && template.customTotal ? String(template.customTotal) : "10";
   customTotalWrap.style.display = totalMode.value === "custom" ? "block" : "none";
+  renderLayoutAreaControls();
 }
 
 function onSelection(node) {
@@ -3267,6 +3372,8 @@ function saveTemplate() {
     name: document.getElementById("tpl-name").value.trim() || null,
     templateKind: getCurrentTemplateKind(),
     placementMode: getCurrentPlacementMode(),
+    layoutArea: getCurrentLayoutArea(),
+    safeArea: getCurrentSafeArea(),
     pageFormat: document.getElementById("page-fmt").value,
     totalMode: totalMode,
     customTotal: customTotal

@@ -12,6 +12,7 @@ Implemented now:
 
 - Save a header, footer, or custom region as a reusable template in Figma Slides
 - Choose anchor-based placement presets such as top center, bottom right, or custom position
+- Optionally align templates to a configurable safe area instead of raw slide edges
 - Auto-generate page numbers from a selected text node
 - Apply or sync a template region across slides
 - Exclude slides and control numbering start
@@ -57,7 +58,7 @@ Notes:
 ### Deck workflow
 
 1. Select a header, footer, or custom region on a slide.
-2. Save it as a template and choose its anchor placement.
+2. Save it as a template and choose its anchor placement and layout area.
 3. Optionally bind text layers inside the template as syncable content sources.
 4. Configure excluded slides and page-number start.
 5. Apply or sync the template across the deck.
