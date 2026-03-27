@@ -9,7 +9,10 @@ import { handleInsertCrossref, handleUpdateAllCrossrefs } from "./crossrefs";
 import { handleGetReferences, handleAddReference, handleImportBibtex, handleDeleteReference, handleInsertCitation, handleUpdateAllCitations, handleGenerateBibliographySlide, findCitationRoot, serializeCitationNode } from "./references";
 import { handleInsertChart, handleDeleteChart, findChartRoot, serializeChartNode } from "./charts";
 import { handleInsertSubfigure, handleUpdateSubfigure, handleDeleteSubfigure, handleApplySubfigureNumbering, findSubfigureRoot, serializeSubfigureNode } from "./subfigures";
+import { handleInsertSlideTemplate } from "./slide-templates";
 import { handleRunConsistencyCheck, handleAutoFixIssue, handleAutoFixAll, handleFocusNode } from "./consistency";
+import { handleGetSpeakerCues, handleSetSpeakerCue, handleClearAllCues, handleAutoEstimateAll, handleInsertTimeBudgetSlide } from "./speaker-cues";
+import { handleInsertAppendixDivider, handleInsertBackupLink, handleInsertBackToMainLink, handleGetAppendixInfo, handleReorderAppendix, handleUpdateAllAppendixLinks } from "./appendix";
 import { postError } from "./errors";
 import { getStorage } from "./storage";
 import { normalizeSettings } from "./normalize";
@@ -224,6 +227,45 @@ figma.ui.onmessage = async (message: any) => {
         break;
       case "apply-subfigure-numbering":
         await handleApplySubfigureNumbering(message);
+        break;
+      // Slide Templates
+      case "insert-slide-template":
+        await handleInsertSlideTemplate(message);
+        break;
+      // Speaker Cues & Time Budget
+      case "get-speaker-cues":
+        await handleGetSpeakerCues(message);
+        break;
+      case "set-speaker-cue":
+        await handleSetSpeakerCue(message);
+        break;
+      case "clear-all-cues":
+        await handleClearAllCues(message);
+        break;
+      case "auto-estimate-all":
+        await handleAutoEstimateAll(message);
+        break;
+      case "generate-time-budget-slide":
+        await handleInsertTimeBudgetSlide(message);
+        break;
+      // Appendix
+      case "insert-appendix-divider":
+        await handleInsertAppendixDivider(message);
+        break;
+      case "insert-backup-link":
+        await handleInsertBackupLink(message);
+        break;
+      case "insert-back-to-main-link":
+        await handleInsertBackToMainLink(message);
+        break;
+      case "get-appendix-info":
+        await handleGetAppendixInfo(message);
+        break;
+      case "reorder-appendix":
+        await handleReorderAppendix(message);
+        break;
+      case "update-all-appendix-links":
+        await handleUpdateAllAppendixLinks(message);
         break;
       default:
         break;

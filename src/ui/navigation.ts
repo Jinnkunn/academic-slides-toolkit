@@ -212,7 +212,7 @@ export function renderModuleShell(): void {
     equations: ["overview", "insert", "selected", "numbering"],
     components: ["library", "figure", "theorem", "table", "crossref", "subfigure"],
     assets: ["references", "charts"],
-    settings: ["language", "consistency"],
+    settings: ["language", "consistency", "speaker", "appendix"],
   };
 
   const backdrop = document.getElementById("overlay-backdrop")!;

@@ -21,6 +21,9 @@ import { runConsistencyCheck, autoFixIssue, autoFixAll, highlightIssueNode, onCo
 import { loadReferences, addReference, importBibtex, deleteReference, insertCitation, updateAllCitations, generateBibSlide, onReferencesLoaded, onReferenceAdded, onBibtexImported, onReferenceDeleted, onCitationInserted, onCitationsUpdated, onBibSlideGenerated, initReferencesUI } from "./references-ui";
 import { insertChart, deleteChart, onChartSelection, onChartInserted, onChartDeleted, initChartUI } from "./charts-ui";
 import { insertSubfigure, updateSubfigure, deleteSubfigure, applySubfigureNumbering, onSubfigureSelection, onSubfigureInserted, onSubfigureUpdated, onSubfigureDeleted, onSubfigureNumberingApplied, onSubfigureLayoutChange } from "./subfigures-ui";
+import { insertSlideTemplate, onSlideTemplateInserted } from "./slide-templates-ui";
+import { loadSpeakerCues, saveSpeakerCue, autoEstimateAll, clearAllCues, generateTimeBudgetSlide, onSpeakerCuesLoaded, onSpeakerCueSaved, onAutoEstimateComplete, onCuesCleared, onTimeBudgetGenerated, initSpeakerCuesUI } from "./speaker-cues-ui";
+import { loadAppendixInfo, insertAppendixDivider, insertBackupLink, insertBackToMainLink, updateAllAppendixLinks, onAppendixInfoLoaded, onAppendixDividerInserted, onBackupLinkInserted, onBackLinkInserted, onAppendixLinksUpdated, onAppendixReordered, initAppendixUI } from "./appendix-ui";
 import { send, toast, getErrorToastScope, localizeBackendMessage } from "./utils";
 import { t, applyLanguage } from "./i18n";
 
@@ -117,6 +120,23 @@ Object.assign(window, {
   deleteSubfigure,
   applySubfigureNumbering,
   onSubfigureLayoutChange,
+
+  // Slide Templates
+  insertSlideTemplate,
+
+  // Speaker Cues
+  loadSpeakerCues,
+  saveSpeakerCue,
+  autoEstimateAll,
+  clearAllCues,
+  generateTimeBudgetSlide,
+
+  // Appendix
+  loadAppendixInfo,
+  insertAppendixDivider,
+  insertBackupLink,
+  insertBackToMainLink,
+  updateAllAppendixLinks,
 
   // Settings
   saveSettings,
@@ -289,6 +309,45 @@ window.onmessage = (event: MessageEvent) => {
     case "subfigure-numbering-applied":
       onSubfigureNumberingApplied(message);
       break;
+    // Slide Templates
+    case "slide-template-inserted":
+      onSlideTemplateInserted(message);
+      break;
+    // Speaker Cues
+    case "speaker-cues-loaded":
+      onSpeakerCuesLoaded(message);
+      break;
+    case "speaker-cue-saved":
+      onSpeakerCueSaved(message);
+      break;
+    case "auto-estimate-complete":
+      onAutoEstimateComplete(message);
+      break;
+    case "speaker-cues-cleared":
+      onCuesCleared(message);
+      break;
+    case "time-budget-slide-generated":
+      onTimeBudgetGenerated(message);
+      break;
+    // Appendix
+    case "appendix-info":
+      onAppendixInfoLoaded(message);
+      break;
+    case "appendix-divider-inserted":
+      onAppendixDividerInserted(message);
+      break;
+    case "backup-link-inserted":
+      onBackupLinkInserted(message);
+      break;
+    case "back-link-inserted":
+      onBackLinkInserted(message);
+      break;
+    case "appendix-links-updated":
+      onAppendixLinksUpdated(message);
+      break;
+    case "appendix-reordered":
+      onAppendixReordered(message);
+      break;
     case "error":
       toast(getErrorToastScope(), localizeBackendMessage(message.message, message.errorKey, message.errorVars), "error");
       break;
@@ -308,6 +367,8 @@ initSnippets();
 initCrossrefUI();
 initReferencesUI();
 initChartUI();
+initSpeakerCuesUI();
+initAppendixUI();
 
 document.addEventListener("keydown", (event: KeyboardEvent) => {
   if (event.key === "Escape") {

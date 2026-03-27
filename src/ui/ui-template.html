@@ -1671,6 +1671,49 @@ input[type=number]::-webkit-outer-spin-button {
                   <div class="quick-desc" id="components-card-crossref-desc">插入 (Fig. 1) (Eq. 3) 等引用标记。</div>
                 </button>
               </div>
+              <div style="margin-top:16px; font-weight:600; font-size:13px; padding:0 4px">Slide Templates</div>
+              <div class="quick-grid" style="margin-top:8px">
+                <button class="quick-card" type="button" onclick="insertSlideTemplate('title')">
+                  <div class="quick-kicker">Slide</div>
+                  <div class="quick-title">Title Slide</div>
+                  <div class="quick-desc">标题 + 副标题 + 作者信息</div>
+                </button>
+                <button class="quick-card" type="button" onclick="insertSlideTemplate('agenda')">
+                  <div class="quick-kicker">Slide</div>
+                  <div class="quick-title">Agenda</div>
+                  <div class="quick-desc">带编号的大纲列表</div>
+                </button>
+                <button class="quick-card" type="button" onclick="insertSlideTemplate('section')">
+                  <div class="quick-kicker">Slide</div>
+                  <div class="quick-title">Section Divider</div>
+                  <div class="quick-desc">深色背景章节分隔页</div>
+                </button>
+                <button class="quick-card" type="button" onclick="insertSlideTemplate('two-column')">
+                  <div class="quick-kicker">Slide</div>
+                  <div class="quick-title">Two Column</div>
+                  <div class="quick-desc">左右双栏对比布局</div>
+                </button>
+                <button class="quick-card" type="button" onclick="insertSlideTemplate('result')">
+                  <div class="quick-kicker">Slide</div>
+                  <div class="quick-title">Result Highlight</div>
+                  <div class="quick-desc">三个关键指标卡片</div>
+                </button>
+                <button class="quick-card" type="button" onclick="insertSlideTemplate('pipeline')">
+                  <div class="quick-kicker">Slide</div>
+                  <div class="quick-title">Method Pipeline</div>
+                  <div class="quick-desc">左右流程步骤展示</div>
+                </button>
+                <button class="quick-card" type="button" onclick="insertSlideTemplate('table')">
+                  <div class="quick-kicker">Slide</div>
+                  <div class="quick-title">Ablation Table</div>
+                  <div class="quick-desc">实验对比表格 + 高亮</div>
+                </button>
+                <button class="quick-card" type="button" onclick="insertSlideTemplate('thankyou')">
+                  <div class="quick-kicker">Slide</div>
+                  <div class="quick-title">Thank You</div>
+                  <div class="quick-desc">致谢 + Q&amp;A 结尾页</div>
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -2112,6 +2155,8 @@ Q4,180,160"></textarea>
       <div class="subnav">
         <button class="subnav-btn active" id="settings-subnav-language" type="button" onclick="setModule('settings')">Language</button>
         <button class="subnav-btn" id="settings-subnav-consistency" type="button" onclick="openOverlayPage('settings', 'consistency')">Check</button>
+        <button class="subnav-btn" id="settings-subnav-speaker" type="button" onclick="openOverlayPage('settings', 'speaker')">Speaker</button>
+        <button class="subnav-btn" id="settings-subnav-appendix" type="button" onclick="openOverlayPage('settings', 'appendix')">Appendix</button>
       </div>
 
       <div class="module-page" id="settings-page-language">
@@ -2179,6 +2224,71 @@ Q4,180,160"></textarea>
               <div id="consistency-summary"></div>
               <div id="consistency-results"></div>
               <div class="toast" id="toast-consistency"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="settings-page-speaker">
+        <section class="section">
+          <div class="section-head">
+            <div class="section-title">Speaker Cues / Time Budget</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="stack">
+              <div class="btn-row action-bar">
+                <button class="btn btn-primary" type="button" onclick="loadSpeakerCues()">加载 / 刷新</button>
+                <button class="btn btn-secondary" type="button" onclick="autoEstimateAll()">自动估算全部</button>
+              </div>
+              <div class="btn-row action-bar">
+                <button class="btn btn-secondary" type="button" onclick="generateTimeBudgetSlide()">生成时间预算页</button>
+                <button class="btn btn-danger-quiet" type="button" onclick="clearAllCues()">清空全部标注</button>
+              </div>
+              <div id="speaker-cues-summary" style="font-size:13px; font-weight:600; margin:8px 0"></div>
+              <div id="speaker-cues-list"></div>
+              <div class="toast" id="toast-speaker-cues"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="settings-page-appendix">
+        <section class="section">
+          <div class="section-head">
+            <div class="section-title">Appendix 结构</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="stack">
+              <div class="btn-row action-bar">
+                <button class="btn btn-primary" type="button" onclick="loadAppendixInfo()">加载 / 刷新</button>
+                <button class="btn btn-secondary" id="appendix-divider-btn" type="button" onclick="insertAppendixDivider()">插入 Appendix 分隔页</button>
+              </div>
+              <div id="appendix-status" style="font-size:13px; margin:4px 0"></div>
+              <div id="appendix-panel-content"></div>
+              <div style="border-top:1px solid var(--line); padding-top:10px; margin-top:6px">
+                <div class="field">
+                  <label for="appendix-target-page">目标 Appendix 页</label>
+                  <select id="appendix-target-page"></select>
+                </div>
+                <button class="btn btn-secondary" type="button" onclick="insertBackupLink()" style="margin-top:4px">在当前 slide 插入 Backup Link</button>
+              </div>
+              <div style="border-top:1px solid var(--line); padding-top:10px; margin-top:6px">
+                <div class="field">
+                  <label for="appendix-source-page">来源主 slide</label>
+                  <select id="appendix-source-page"></select>
+                </div>
+                <button class="btn btn-secondary" type="button" onclick="insertBackToMainLink()" style="margin-top:4px">在当前 slide 插入 Back Link</button>
+              </div>
+              <div style="border-top:1px solid var(--line); padding-top:10px; margin-top:6px">
+                <button class="btn btn-secondary" type="button" onclick="updateAllAppendixLinks()">刷新全部 Appendix 链接</button>
+              </div>
+              <div class="toast" id="toast-appendix"></div>
             </div>
           </div>
         </section>
