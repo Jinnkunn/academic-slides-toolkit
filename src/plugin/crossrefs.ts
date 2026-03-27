@@ -15,6 +15,8 @@ import {
 import { getAbsolutePosition } from "./layout";
 import { collectEquationRoots, EQUATION_KIND } from "./equations";
 import { collectFigureRoots, FIGURE_KIND } from "./figures";
+import { collectTheoremRoots, THEOREM_KIND } from "./theorems";
+import { collectTableRoots, TABLE_KIND } from "./tables";
 
 export const CROSSREF_KIND = "crossref";
 
@@ -196,9 +198,21 @@ async function buildNumberingMap(
     for (let i = 0; i < roots.length; i++) {
       map.set(roots[i].node.id, i + 1);
     }
+  } else if (targetKind === "theorem") {
+    const roots = await collectTheoremRoots(scope, currentTargetId);
+    const typeCounters: Record<string, number> = {};
+    for (let i = 0; i < roots.length; i++) {
+      const thmType = getPluginData(roots[i].node, "theoremType") || "theorem";
+      if (!typeCounters[thmType]) typeCounters[thmType] = 0;
+      typeCounters[thmType]++;
+      map.set(roots[i].node.id, typeCounters[thmType]);
+    }
+  } else if (targetKind === "table") {
+    const roots = await collectTableRoots(scope, currentTargetId);
+    for (let i = 0; i < roots.length; i++) {
+      map.set(roots[i].node.id, i + 1);
+    }
   }
-  // table and theorem numbering can be added when those modules exist;
-  // for now, positional/manual index is used.
 
   return map;
 }

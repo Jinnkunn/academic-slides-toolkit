@@ -62,6 +62,9 @@ export function openOverlayPage(moduleId: string, pageId: string): void {
     if (moduleId === "equations" && pageId === "selected") focusTargetId = "equation-selected-input";
     if (moduleId === "deck" && pageId === "template") focusTargetId = "tpl-name";
     if (moduleId === "deck" && pageId === "sources") focusTargetId = "source-name-input";
+    if (moduleId === "components" && pageId === "theorem") focusTargetId = "theorem-type-select";
+    if (moduleId === "components" && pageId === "table") focusTargetId = "table-caption-input";
+    if (moduleId === "components" && pageId === "crossref") focusTargetId = "crossref-target-kind";
 
     if (focusTargetId) {
       var focusTarget = document.getElementById(focusTargetId) as HTMLInputElement | null;
@@ -206,7 +209,7 @@ export function renderModuleShell(): void {
   const pageConfig: Record<string, string[]> = {
     deck: ["overview", "template", "sources", "sync"],
     equations: ["overview", "insert", "selected", "numbering"],
-    components: ["library", "figure", "theorem"],
+    components: ["library", "figure", "theorem", "table", "crossref"],
     assets: ["references", "charts", "captions"],
     settings: ["language"],
   };
