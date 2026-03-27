@@ -1,0 +1,32 @@
+{
+  "name": "figma-academic-slides",
+  "version": "1.0.0",
+  "description": "`Academic Slides Toolkit` is an early-stage Figma Slides plugin for building research, teaching, and technical presentation decks with more structure than a generic slide workflow.",
+  "main": "dist/code.js",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:prod": "node scripts/build.mjs --prod",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jinnkunn/academic-slides-toolkit.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Jinnkunn/academic-slides-toolkit/issues"
+  },
+  "homepage": "https://github.com/Jinnkunn/academic-slides-toolkit#readme",
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.124.0",
+    "esbuild": "^0.27.4",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "mathjax": "^3.2.2"
+  }
+}

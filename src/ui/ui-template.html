@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Academic Slides Toolkit · dev-20250318-01</title>
+<style>
+:root {
+  --bg: #f7f7f8;
+  --panel: #ffffff;
+  --panel-soft: #fbfbfc;
+  --line: #e5e7eb;
+  --line-strong: #d7dbe2;
+  --ink: #111827;
+  --muted: #6b7280;
+  --muted-soft: #9ca3af;
+  --accent: #0d99ff;
+  --accent-soft: rgba(17, 24, 39, 0.06);
+  --accent-ink: #4b5563;
+  --success: #15803d;
+  --success-soft: rgba(21, 128, 61, 0.1);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.1);
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: Inter, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+input:focus,
+select:focus {
+  border-color: rgba(13, 153, 255, 0.55);
+  box-shadow: 0 0 0 2px rgba(13, 153, 255, 0.08);
+  background: #fff;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.sidebar {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.module-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-top: 10px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f3f4f6;
+}
+
+.module-tab.disabled-tab {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.module-tab {
+  padding: 7px 4px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.module-tab.active {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.module-context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  min-height: 16px;
+  font-size: 10px;
+  color: var(--muted-soft);
+}
+
+.module-context-label {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.module-context-sep {
+  opacity: 0.6;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  display: none;
+}
+
+.top-pill {
+  min-height: 22px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.icon-btn {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.icon-btn:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.view.is-hidden {
+  display: none;
+}
+
+.module-view.is-hidden,
+.module-page.is-hidden {
+  display: none;
+}
+
+.overlay-backdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--overlay-top, 126px);
+  bottom: 0;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0.18) 100%);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+}
+
+.overlay-backdrop.is-hidden {
+  display: none;
+}
+
+.module-page.overlay-open {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: calc(var(--overlay-top, 126px) + 10px);
+  bottom: 12px;
+  z-index: 50;
+  overflow-y: auto;
+  padding-right: 2px;
+  animation: overlay-enter 180ms ease-out;
+}
+
+.module-page.overlay-open .section {
+  border-radius: 16px;
+  border-color: rgba(17, 24, 39, 0.08);
+  box-shadow:
+    0 22px 48px rgba(15, 23, 42, 0.18),
+    0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.module-page.overlay-open .section-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 52px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  backdrop-filter: blur(8px);
+}
+
+.overlay-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.panel-close {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #f8fafc;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.panel-close:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.overlay-kicker {
+  display: none;
+}
+
+@keyframes overlay-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.subnav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  padding: 0 0 2px;
+}
+
+.subnav-btn {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #f9fafb;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.subnav-btn.active {
+  border-color: #d7dbe2;
+  background: #fff;
+  color: var(--ink);
+}
+
+.section {
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.section-head {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.section-kicker {
+  display: none;
+}
+
+.section-title {
+  margin-top: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.module-page.overlay-open .section-title {
+  padding-top: 1px;
+}
+
+.section-desc {
+  display: none;
+}
+
+.section-body {
+  padding: 12px;
+}
+
+.stack {
+  display: grid;
+  gap: 10px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field label,
+.field-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.hint {
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--muted-soft);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.row .grow {
+  flex: 1;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.meta-card {
+  padding: 7px 8px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.meta-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-soft);
+}
+
+.meta-value {
+  margin-top: 3px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px;
+}
+
+.box.soft {
+  background: #f9fafb;
+}
+
+.empty,
+.sel-empty {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.sel-name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.badge-row,
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.badge,
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.pill.accent {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.pill.success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.pill.warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.status {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.status.active {
+  border-color: rgba(17, 24, 39, 0.08);
+  background: rgba(17, 24, 39, 0.04);
+  color: #374151;
+}
+
+.tree {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.tree-scroll {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: none;
+  border-top: 1px solid #eef0f3;
+  background: transparent;
+  text-align: left;
+  color: var(--ink);
+}
+
+.tree-item:first-child {
+  border-top: none;
+}
+
+.tree-item.selectable:hover {
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.tree-item.selected {
+  background: rgba(17, 24, 39, 0.06);
+}
+
+.tree-item.disabled {
+  color: var(--muted-soft);
+}
+
+.tree-type {
+  min-width: 40px;
+  padding: 3px 5px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tree-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tree-tag {
+  color: var(--accent-ink);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 34px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-0.5px);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid #d9dde3;
+}
+
+.btn-success {
+  background: var(--success-soft);
+  color: var(--success);
+  border: 1px solid rgba(21, 128, 61, 0.12);
+}
+
+.btn-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid rgba(220, 38, 38, 0.12);
+}
+
+.btn-danger-quiet {
+  background: #fff;
+  color: var(--danger);
+  border: 1px solid rgba(220, 38, 38, 0.18);
+}
+
+.btn-danger-quiet:hover {
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.btn-muted {
+  background: #f3f4f6;
+  color: var(--muted);
+}
+
+.btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.action-bar {
+  position: sticky;
+  bottom: -12px;
+  z-index: 2;
+  margin-top: 12px;
+  padding: 10px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.94) 30%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.action-bar.stack {
+  gap: 8px;
+}
+
+.action-stack {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.danger-stack {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.inspector-summary .section-body {
+  padding: 10px 12px;
+}
+
+.template-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.template-picker .field {
+  gap: 4px;
+}
+
+.template-picker .status {
+  margin: 0;
+}
+
+.rule-list {
+  display: grid;
+  gap: 10px;
+}
+
+.rule-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 12px;
+}
+
+.rule-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rule-title {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rule-sub {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--muted-soft);
+}
+
+.rule-ranges {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.range-card {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #edf0f3;
+  background: #fafbfc;
+}
+
+.range-grid {
+  display: grid;
+  grid-template-columns: 52px 52px 1fr 32px;
+  gap: 6px;
+  align-items: center;
+}
+
+.range-preview {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.range-delete {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 1;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid rgba(220, 38, 38, 0.12);
+}
+
+.list {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.list-scroll {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.list-row + .list-row {
+  border-top: 1px solid #eef0f3;
+}
+
+.list-row input[type=checkbox] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--danger);
+}
+
+.list-row.source {
+  background: rgba(17, 24, 39, 0.03);
+  color: var(--muted);
+}
+
+.list-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.source-badge {
+  min-height: 22px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.toast {
+  display: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.toast.show {
+  display: block;
+}
+
+.toast.info {
+  background: rgba(17, 24, 39, 0.04);
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  color: #374151;
+}
+
+.toast.success {
+  background: var(--success-soft);
+  border: 1px solid rgba(21, 128, 61, 0.12);
+  color: var(--success);
+}
+
+.toast.error {
+  background: var(--danger-soft);
+  border: 1px solid rgba(220, 38, 38, 0.12);
+  color: var(--danger);
+}
+
+.setting-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+}
+
+.setting-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.setting-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.setting-desc {
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.hero-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #f8fafc;
+}
+
+.hero-card::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #111827;
+  flex: 0 0 auto;
+}
+
+.hero-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.hero-desc {
+  display: none;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.quick-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  text-align: left;
+}
+
+.quick-card:hover {
+  border-color: var(--line-strong);
+  background: #fcfcfd;
+}
+
+.quick-card::after {
+  content: "›";
+  color: var(--muted-soft);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.quick-kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 22px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.quick-title {
+  margin-top: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.quick-desc {
+  display: none;
+}
+
+.placeholder-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.placeholder-card {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.placeholder-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.placeholder-desc {
+  display: none;
+}
+
+.mini-list {
+  display: none;
+}
+
+.mini-item {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #edf0f3;
+  font-size: 11px;
+  color: var(--ink);
+}
+
+.equation-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.equation-textarea {
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+  border: 1px solid #d9dde3;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: #fff;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.equation-textarea:focus {
+  border-color: rgba(13, 153, 255, 0.55);
+  box-shadow: 0 0 0 2px rgba(13, 153, 255, 0.08);
+}
+
+.equation-grid {
+  display: grid;
+  grid-template-columns: 1fr 96px 96px;
+  gap: 8px;
+}
+
+.equation-preview {
+  min-height: 120px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 14px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+
+.equation-preview.empty {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.equation-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d7dbe2;
+  border-radius: 999px;
+}
+</style>
+<script>
+window.MathJax = {
+  svg: { fontCache: "none" },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+      window.__mathjaxReady = true;
+      window.__mathjaxFailed = false;
+      window.dispatchEvent(new Event("mathjax-ready"));
+    }
+  }
+};
+window.__mathjaxFailed = false;
+</script>
+<!-- INJECT_MATHJAX -->
+</head>
+<body>
+<div class="sidebar">
+  <div class="topbar">
+    <div class="title-row">
+      <div class="title" id="top-title">Academic Slides Toolkit</div>
+      <div class="top-actions">
+        <div class="top-pill" id="top-pill">Slides</div>
+      </div>
+    </div>
+    <div class="subtitle" id="top-subtitle">像 Figma 右侧属性栏一样，把模板、内容来源和同步都放在一个侧栏里完成。</div>
+    <div class="module-tabs">
+      <button class="module-tab active" id="module-tab-deck" type="button" onclick="setModule('deck')">Deck</button>
+      <button class="module-tab" id="module-tab-equations" type="button" onclick="setModule('equations')">Equations</button>
+      <button class="module-tab" id="module-tab-settings" type="button" onclick="setModule('settings')">Settings</button>
+    </div>
+    <div class="module-context">
+      <span class="module-context-label" id="module-context-label">Deck</span>
+      <span class="module-context-sep">/</span>
+      <span id="module-context-detail">Overview</span>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <div class="module-view" id="module-view-deck">
+      <div class="subnav">
+        <button class="subnav-btn active" id="deck-subnav-overview" type="button" onclick="setModule('deck')">Overview</button>
+        <button class="subnav-btn" id="deck-subnav-template" type="button" onclick="openOverlayPage('deck', 'template')">Template</button>
+        <button class="subnav-btn" id="deck-subnav-sources" type="button" onclick="openOverlayPage('deck', 'sources')">Sources</button>
+        <button class="subnav-btn" id="deck-subnav-sync" type="button" onclick="openOverlayPage('deck', 'sync')">Sync</button>
+      </div>
+
+      <section class="section inspector-summary">
+        <div class="section-body">
+          <div class="template-picker">
+            <div class="field">
+              <label for="active-template-select" id="active-template-label">模板</label>
+              <select id="active-template-select" onchange="onActiveTemplateChange()">
+                <option value="">请选择模板</option>
+              </select>
+            </div>
+            <div class="status" id="overview-status">还没有选中模板。你也可以先在下面直接保存一个新的区域模板。</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="module-page" id="deck-page-overview">
+        <section class="section">
+          <div class="section-body">
+            <div class="stack">
+              <div class="hero-card">
+                <div class="hero-title" id="deck-hero-title">Deck 工具台</div>
+                <div class="hero-desc" id="deck-hero-desc">管理模板区域、页码、内容来源和同步。建议先保存模板，再配置来源，最后批量同步。</div>
+              </div>
+
+              <div class="meta-grid">
+                <div class="meta-card">
+                  <div class="meta-label">Slides</div>
+                  <div class="meta-value" id="meta-total">0</div>
+                </div>
+                <div class="meta-card">
+                  <div class="meta-label" id="meta-template-label">模板页</div>
+                  <div class="meta-value" id="meta-template">-</div>
+                </div>
+                <div class="meta-card">
+                  <div class="meta-label" id="meta-rules-label">内容来源</div>
+                  <div class="meta-value" id="meta-rules">0</div>
+                </div>
+                <div class="meta-card">
+                  <div class="meta-label" id="meta-targets-label">将更新</div>
+                  <div class="meta-value" id="meta-targets">0</div>
+                </div>
+              </div>
+
+              <div class="quick-grid">
+                <button class="quick-card" type="button" onclick="openOverlayPage('deck', 'template')">
+                  <div class="quick-kicker" id="deck-quick-template-kicker">Step 1</div>
+                  <div class="quick-title" id="deck-quick-template-title">保存模板</div>
+                  <div class="quick-desc" id="deck-quick-template-desc">从当前区域建立模板，定义页码节点和格式。</div>
+                </button>
+                <button class="quick-card" type="button" onclick="openOverlayPage('deck', 'sources')">
+                  <div class="quick-kicker" id="deck-quick-sources-kicker">Step 2</div>
+                  <div class="quick-title" id="deck-quick-sources-title">内容来源</div>
+                  <div class="quick-desc" id="deck-quick-sources-desc">绑定模板中的文字，并指定不同页段使用哪张 slide。</div>
+                </button>
+                <button class="quick-card" type="button" onclick="openOverlayPage('deck', 'sync')">
+                  <div class="quick-kicker" id="deck-quick-sync-kicker">Step 3</div>
+                  <div class="quick-title" id="deck-quick-sync-title">同步设置</div>
+                  <div class="quick-desc" id="deck-quick-sync-desc">排除不需要更新的 slides，并批量应用模板或同步内容。</div>
+                </button>
+                <button class="quick-card" type="button" onclick="setModule('settings')">
+                  <div class="quick-kicker" id="deck-quick-settings-kicker">Global</div>
+                  <div class="quick-title" id="deck-quick-settings-title">插件设置</div>
+                  <div class="quick-desc" id="deck-quick-settings-desc">切换语言，并为未来的全局默认选项预留位置。</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="deck-page-template">
+        <section class="section">
+          <div class="section-head">
+            <div class="overlay-kicker">Deck Panel</div>
+            <div class="section-kicker">Template</div>
+            <div class="section-title" id="template-title">保存区域模板</div>
+            <div class="section-desc" id="template-desc">在画布中选中整个区域，再决定是否要自动生成页码。</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="stack">
+              <div class="box">
+                <div class="sel-empty" id="sel-empty">当前还没有检测到选区。请先在画布里选中一个模板区域节点。</div>
+                <div id="sel-info" style="display:none;">
+                  <div class="sel-name" id="sel-name"></div>
+                  <div class="badge-row">
+                    <span class="badge" id="sel-type"></span>
+                    <span class="badge" id="sel-id"></span>
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn btn-secondary" id="refresh-selection-btn" onclick="send('get-selection')">重新读取当前选区</button>
+
+              <div id="indicator-section" style="display:none;" class="stack">
+                <div class="field-title" id="indicator-title">页码位置</div>
+                <div class="hint" id="indicator-desc">如果这个区域里有页码文字，请点下面的 TEXT 节点。没有也可以跳过。</div>
+                <div class="tree">
+                  <div class="tree-scroll" id="node-tree"></div>
+                </div>
+                <div class="status" id="ind-hint">当前不自动生成页码。若要自动编号，请在上面选一个文本节点。</div>
+              </div>
+
+              <div id="config-section" style="display:none;" class="stack">
+                <div class="field">
+                  <label for="tpl-name" id="tpl-name-label">模板名称</label>
+                  <input type="text" id="tpl-name" placeholder="例如：顶部页眉 / 底部页脚 / 自定义区域">
+                </div>
+
+                <div class="field">
+                  <label for="tpl-kind" id="tpl-kind-label">模板类型</label>
+                  <select id="tpl-kind" onchange="onTemplateKindChange()">
+                    <option id="tpl-kind-header" value="header">页眉</option>
+                    <option id="tpl-kind-footer" value="footer">页脚</option>
+                    <option id="tpl-kind-custom" value="custom">自定义</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="tpl-placement" id="tpl-placement-label">锚点布局</label>
+                  <select id="tpl-placement" onchange="setTemplateSummary()">
+                    <option id="tpl-placement-top-left" value="top-left">顶部左对齐</option>
+                    <option id="tpl-placement-top-center" value="top-center">顶部居中</option>
+                    <option id="tpl-placement-top-right" value="top-right">顶部右对齐</option>
+                    <option id="tpl-placement-bottom-left" value="bottom-left">底部左对齐</option>
+                    <option id="tpl-placement-bottom-center" value="bottom-center">底部居中</option>
+                    <option id="tpl-placement-bottom-right" value="bottom-right">底部右对齐</option>
+                    <option id="tpl-placement-custom" value="custom">自定义位置</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="tpl-layout-area" id="tpl-layout-area-label">布局参照</label>
+                  <select id="tpl-layout-area" onchange="onLayoutAreaChange()">
+                    <option id="tpl-layout-area-slide" value="slide">整页边界</option>
+                    <option id="tpl-layout-area-safe-area" value="safe-area">Safe Area</option>
+                  </select>
+                </div>
+
+                <div id="layout-safe-area-wrap" style="display:none;" class="stack">
+                  <div class="field-title" id="safe-area-title">Safe Area 边距</div>
+                  <div class="hint" id="safe-area-hint">Header / Footer 会相对这个内容区进行对齐，而不是直接贴 slide 边缘。</div>
+                  <div class="row">
+                    <div class="grow field">
+                      <label for="safe-area-top" id="safe-area-top-label">上</label>
+                      <input type="number" id="safe-area-top" min="0" value="24" oninput="setTemplateSummary()">
+                    </div>
+                    <div class="grow field">
+                      <label for="safe-area-right" id="safe-area-right-label">右</label>
+                      <input type="number" id="safe-area-right" min="0" value="32" oninput="setTemplateSummary()">
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="grow field">
+                      <label for="safe-area-bottom" id="safe-area-bottom-label">下</label>
+                      <input type="number" id="safe-area-bottom" min="0" value="24" oninput="setTemplateSummary()">
+                    </div>
+                    <div class="grow field">
+                      <label for="safe-area-left" id="safe-area-left-label">左</label>
+                      <input type="number" id="safe-area-left" min="0" value="32" oninput="setTemplateSummary()">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field" id="fmt-row" style="display:none;">
+                  <label for="page-fmt" id="page-fmt-label">页码格式</label>
+                  <select id="page-fmt">
+                    <option value="%n">仅页码，例如 3</option>
+                    <option value="%n / %t">页码 / 总数，例如 3 / 10</option>
+                    <option value="%02n/%02t">两位数，例如 02/33</option>
+                    <option value="%n of %t">英文格式，例如 3 of 10</option>
+                    <option value="Page %n">前缀格式，例如 Page 3</option>
+                  </select>
+                </div>
+
+                <div class="field" id="total-row" style="display:none;">
+                  <div class="field-title" id="total-title">总页数</div>
+                  <div class="row">
+                    <div class="grow">
+                      <select id="total-mode" onchange="onTotalModeChange()">
+                        <option value="auto">自动统计启用该模板的 slides</option>
+                        <option value="custom">手动指定总页数</option>
+                      </select>
+                    </div>
+                    <div id="custom-total-wrap" style="display:none; width:96px;">
+                      <input type="number" id="custom-total" min="1" value="10">
+                    </div>
+                  </div>
+                  <div class="hint" id="total-hint">只有格式里包含 `%t` 时，才会用到总页数。</div>
+                </div>
+
+                <div class="status" id="template-summary">当前会保存一个区域模板，后续可直接在同一侧栏继续配置内容来源和同步。</div>
+                <div class="action-bar">
+                  <button class="btn btn-primary" id="save-btn" onclick="saveTemplate()">保存为模板</button>
+                </div>
+              </div>
+
+              <div class="toast" id="toast-template"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="deck-page-sources">
+        <section class="section">
+          <div class="section-head">
+            <div class="overlay-kicker">Deck Panel</div>
+            <div class="section-kicker">Content Sources</div>
+            <div class="section-title" id="source-title">内容来源</div>
+            <div class="section-desc" id="source-desc">把模板里的某段文字绑定成“可同步内容”，再指定不同页段使用哪张 slide 的现成内容。</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="stack">
+              <div class="status" id="source-status">先在顶部选择一个模板，然后把模板里的某个文本节点设为可同步内容。</div>
+
+              <div id="source-bind-box" style="display:none;" class="stack">
+                <div class="box soft" id="bind-note">先回到模板所在 slide，选中模板区域内的一段文字，比如章节标题，然后点击下面按钮。</div>
+                <button class="btn btn-secondary" id="check-source-btn" onclick="checkVarCandidate()">把当前文字设为可同步内容</button>
+
+                <div id="bind-confirm" style="display:none;" class="stack">
+                  <div class="field">
+                    <label for="source-name-input" id="source-name-label">内容名称</label>
+                    <input type="text" id="source-name-input" placeholder="例如：章节标题">
+                  </div>
+                  <div class="btn-row">
+                    <button class="btn btn-primary" id="confirm-source-btn" onclick="confirmAddSource()">确认添加</button>
+                    <button class="btn btn-muted" id="cancel-source-btn" onclick="cancelAddSource()">取消</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rule-list" id="source-rule-list"></div>
+              <div class="action-bar">
+                <button class="btn btn-primary" id="save-sources-btn" style="display:none;" onclick="saveSources()">保存内容来源规则</button>
+              </div>
+              <div class="toast" id="toast-sources"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="deck-page-sync">
+        <section class="section">
+          <div class="section-head">
+            <div class="overlay-kicker">Deck Panel</div>
+            <div class="section-kicker">Sync</div>
+            <div class="section-title" id="sync-title">同步设置</div>
+            <div class="section-desc" id="sync-desc">预览会影响哪些 slides，设置排除页和起始页码，再应用或同步全部。</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="stack">
+              <div class="status" id="sync-summary">选中模板后，这里会显示模板页、排除页和预计更新范围。</div>
+
+              <div id="sync-settings" style="display:none;" class="stack">
+                <div class="field">
+                  <div class="field-title" id="exclude-title">排除哪些 slides</div>
+                  <div class="list">
+                    <div class="list-scroll" id="sync-page-list">
+                      <div class="list-row">
+                        <div class="list-name" id="sync-loading-placeholder">正在读取 slides 列表...</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label for="sync-start-number" id="sync-start-label">页码起始</label>
+                  <div class="row">
+                    <input type="number" id="sync-start-number" min="0" value="1" style="width:96px;" oninput="onSyncStartNumberInput(this.value)">
+                    <div class="hint" id="sync-start-hint">第一个未排除 slide 显示这个数字。</div>
+                  </div>
+                </div>
+
+                <div class="btn-row action-bar">
+                  <button class="btn btn-secondary" id="apply-btn" onclick="applySelectedTemplate()">仅首次应用到全部</button>
+                  <button class="btn btn-success" id="sync-btn" onclick="syncSelectedTemplate()">同步全部 Slides</button>
+                </div>
+
+                <div class="action-stack">
+                  <button class="btn btn-secondary" id="save-sync-btn" onclick="saveSyncSettings()">保存同步设置</button>
+                  <div class="danger-stack">
+                    <button class="btn btn-danger-quiet" id="remove-instances-btn" onclick="removeSelectedTemplateInstances()">删除已同步区域</button>
+                    <button class="btn btn-danger-quiet" id="delete-template-btn" onclick="deleteSelectedTemplate()">删除模板</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="toast" id="toast-sync"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="module-view is-hidden" id="module-view-equations">
+      <div class="subnav">
+        <button class="subnav-btn active" id="equations-subnav-overview" type="button" onclick="setModule('equations')">Overview</button>
+        <button class="subnav-btn" id="equations-subnav-insert" type="button" onclick="openOverlayPage('equations', 'insert')">Insert</button>
+        <button class="subnav-btn" id="equations-subnav-selected" type="button" onclick="openOverlayPage('equations', 'selected')">Selected</button>
+        <button class="subnav-btn" id="equations-subnav-numbering" type="button" onclick="openOverlayPage('equations', 'numbering')">Numbering</button>
+      </div>
+
+      <div class="module-page" id="equations-page-overview">
+        <section class="section">
+          <div class="section-body">
+            <div class="placeholder-grid">
+              <div class="hero-card">
+                <div class="hero-title" id="equations-hero-title">LaTeX 公式工作台</div>
+                <div class="hero-desc" id="equations-hero-desc">下一阶段最重要的模块。这里会负责插入公式、预览渲染、编辑源码，并把公式保存成可追踪对象。</div>
+              </div>
+              <div class="section">
+                <div class="section-head">
+                  <div class="section-kicker">Overview</div>
+                  <div class="section-title" id="equations-overview-title">公式模块</div>
+                  <div class="section-desc" id="equations-overview-desc">把公式编辑器做成沉浸式弹出层，主 sidebar 只保留导航和状态。</div>
+                </div>
+                <div class="section-body">
+                  <div class="quick-grid">
+                    <button class="quick-card" type="button" onclick="openOverlayPage('equations', 'insert')">
+                      <div class="quick-kicker">Insert</div>
+                      <div class="quick-title" id="equations-quick-insert-title">插入公式</div>
+                      <div class="quick-desc" id="equations-quick-insert-desc">打开完整编辑器，输入 LaTeX、预览并插入到画布。</div>
+                    </button>
+                    <button class="quick-card" type="button" onclick="openOverlayPage('equations', 'selected')">
+                      <div class="quick-kicker">Selected</div>
+                      <div class="quick-title" id="equations-quick-selected-title">编辑选中公式</div>
+                      <div class="quick-desc" id="equations-quick-selected-desc">如果选中了插件创建的公式，直接进入检查器更新源码和样式。</div>
+                    </button>
+                    <button class="quick-card" type="button" onclick="openOverlayPage('equations', 'numbering')">
+                      <div class="quick-kicker">System</div>
+                      <div class="quick-title" id="equations-quick-numbering-title">编号与引用</div>
+                      <div class="quick-desc" id="equations-quick-numbering-desc">后续在这里统一管理公式编号和引用标签。</div>
+                    </button>
+                  </div>
+                  <div class="toast" id="toast-equations-overview"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="equations-page-insert">
+        <section class="section">
+          <div class="section-head">
+            <div class="overlay-kicker">Equation Panel</div>
+            <div class="section-kicker">Insert</div>
+            <div class="section-title" id="equations-insert-title">插入公式</div>
+            <div class="section-desc" id="equations-insert-desc">支持 inline / display 模式，保留源码，后续允许双击重新编辑。</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="equation-editor">
+              <textarea class="equation-textarea" id="equation-input" placeholder="例如：\\int_0^1 x^2 \\, dx = \\frac{1}{3}" oninput="renderEquationInsertPreview()"></textarea>
+              <div class="equation-grid">
+                <div class="field">
+                  <label for="equation-display-mode" id="equations-display-mode-label">显示模式</label>
+                  <select id="equation-display-mode" onchange="renderEquationInsertPreview()">
+                    <option value="display">Display</option>
+                    <option value="inline">Inline</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="equation-font-size" id="equations-font-size-label">字号</label>
+                  <input type="number" id="equation-font-size" min="12" max="96" value="32" oninput="renderEquationInsertPreview()">
+                </div>
+                <div class="field">
+                  <label for="equation-color" id="equations-color-label">颜色</label>
+                  <input type="text" id="equation-color" value="#111827" oninput="renderEquationInsertPreview()">
+                </div>
+              </div>
+              <div class="equation-preview empty" id="equation-preview">输入 LaTeX 后，这里会显示预览。</div>
+              <div class="equation-toolbar action-bar">
+                <button class="btn btn-primary" id="equation-insert-btn" type="button" onclick="insertEquation()">插入到当前画布</button>
+                <button class="btn btn-secondary" id="equation-refresh-btn" type="button" onclick="renderEquationInsertPreview()">刷新预览</button>
+              </div>
+              <div class="mini-list">
+                <div class="mini-item" id="equations-item-preview">实时预览公式渲染结果</div>
+                <div class="mini-item" id="equations-item-mode">切换行内 / 块级公式</div>
+                <div class="mini-item" id="equations-item-style">统一字号、颜色和对齐方式</div>
+              </div>
+              <div class="toast" id="toast-equations"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="equations-page-selected">
+        <section class="section">
+          <div class="section-head">
+            <div class="overlay-kicker">Equation Panel</div>
+            <div class="section-kicker">Selected</div>
+            <div class="section-title" id="equations-selected-title">选中公式检查器</div>
+            <div class="section-desc" id="equations-selected-desc">当用户选中插件创建的公式时，这里会直接显示公式源码、样式和更新操作，而不是跳回插入页重新配置。</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="equation-editor">
+              <div class="status" id="equation-selected-status">当前没有选中插件创建的公式。你可以先在 Insert 页插入一个公式，或在画布中选中已有公式。</div>
+              <textarea class="equation-textarea" id="equation-selected-input" placeholder="选中插件创建的公式后，这里会显示源码" oninput="renderEquationSelectedPreview()"></textarea>
+              <div class="equation-grid">
+                <div class="field">
+                  <label for="equation-selected-display-mode" id="equations-selected-display-mode-label">显示模式</label>
+                  <select id="equation-selected-display-mode" onchange="renderEquationSelectedPreview()">
+                    <option value="display">Display</option>
+                    <option value="inline">Inline</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="equation-selected-font-size" id="equations-selected-font-size-label">字号</label>
+                  <input type="number" id="equation-selected-font-size" min="12" max="96" value="32" oninput="renderEquationSelectedPreview()">
+                </div>
+                <div class="field">
+                  <label for="equation-selected-color" id="equations-selected-color-label">颜色</label>
+                  <input type="text" id="equation-selected-color" value="#111827" oninput="renderEquationSelectedPreview()">
+                </div>
+              </div>
+              <div class="equation-preview empty" id="equation-selected-preview">选中一个插件公式后，这里会显示更新后的预览。</div>
+              <div class="equation-toolbar action-bar">
+                <button class="btn btn-primary" id="equation-update-btn" type="button" onclick="updateSelectedEquation()">更新公式</button>
+                <button class="btn btn-danger" id="equation-delete-btn" type="button" onclick="deleteSelectedEquation()">删除公式</button>
+              </div>
+              <div class="toast" id="toast-equations-selected"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="equations-page-numbering">
+        <section class="section">
+          <div class="section-head">
+            <div class="overlay-kicker">Equation Panel</div>
+            <div class="section-kicker">Numbering</div>
+            <div class="section-title" id="equations-numbering-title">公式编号与引用</div>
+            <div class="section-desc" id="equations-numbering-desc">这里会配置全局编号、章节内编号、引用样式，以及 Eq. 标签的批量刷新。</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="stack">
+              <div class="field">
+                <label for="equations-numbering-scope" id="equations-numbering-scope-label">编号范围</label>
+                <select id="equations-numbering-scope">
+                  <option value="current">仅当前 slide</option>
+                  <option value="all">整份 deck</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="equations-numbering-style" id="equations-numbering-style-label">编号样式</label>
+                <select id="equations-numbering-style">
+                  <option value="paren">(1)</option>
+                  <option value="eq">Eq. 1</option>
+                  <option value="eq-paren">Eq. (1)</option>
+                </select>
+              </div>
+
+              <div class="status" id="equations-numbering-hint">第一版先支持对插件插入的 display 公式批量编号，inline 公式会自动跳过。</div>
+
+              <div class="btn-row action-bar">
+                <button class="btn btn-primary" id="equations-numbering-apply-btn" type="button" onclick="applyEquationNumbering()">生成 / 更新编号</button>
+                <button class="btn btn-secondary" id="equations-numbering-clear-btn" type="button" onclick="clearEquationNumbering()">清空编号</button>
+              </div>
+              <div class="toast" id="toast-equations-numbering"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="module-view is-hidden" id="module-view-components" style="display:none !important">
+      <div class="subnav">
+        <button class="subnav-btn active" id="components-subnav-library" type="button" onclick="setModule('components')">Library</button>
+        <button class="subnav-btn" id="components-subnav-figure" type="button" onclick="openOverlayPage('components', 'figure')">Figure</button>
+        <button class="subnav-btn" id="components-subnav-theorem" type="button" onclick="openOverlayPage('components', 'theorem')">Theorem</button>
+      </div>
+
+      <div class="module-page" id="components-page-library">
+        <section class="section">
+          <div class="section-body">
+            <div class="placeholder-grid">
+              <div class="hero-card">
+                <div class="hero-title" id="components-hero-title">学术组件库</div>
+                <div class="hero-desc" id="components-hero-desc">这里会变成一个标准化插入器，放 theorem、definition、figure、table、section divider 等模块。</div>
+              </div>
+              <div class="quick-grid">
+                <button class="quick-card" type="button" onclick="openOverlayPage('components', 'figure')">
+                  <div class="quick-kicker" id="components-card-figure-kicker">Figure</div>
+                  <div class="quick-title" id="components-card-figure-title">Figure + Caption</div>
+                  <div class="quick-desc" id="components-card-figure-desc">自动创建图片容器、caption 和编号。</div>
+                </button>
+                <button class="quick-card" type="button" onclick="openOverlayPage('components', 'theorem')">
+                  <div class="quick-kicker" id="components-card-theorem-kicker">Math</div>
+                  <div class="quick-title" id="components-card-theorem-title">Theorem / Proof</div>
+                  <div class="quick-desc" id="components-card-theorem-desc">快速搭出规范一致的数学内容块。</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="components-page-figure">
+        <section class="section">
+          <div class="section-head">
+            <div class="overlay-kicker">Component Panel</div>
+            <div class="section-kicker">Figure</div>
+            <div class="section-title" id="components-figure-title">Figure 组件</div>
+            <div class="section-desc" id="components-figure-desc">未来会在这里配置图片、子图布局、caption、图号和样式统一。</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="placeholder-card">
+              <div class="placeholder-title">Figure</div>
+              <div class="placeholder-desc">这一页以后会作为 figure 的独立弹出编辑器。</div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="components-page-theorem">
+        <section class="section">
+          <div class="section-head">
+            <div class="overlay-kicker">Component Panel</div>
+            <div class="section-kicker">Theorem</div>
+            <div class="section-title" id="components-theorem-title">Theorem 组件</div>
+            <div class="section-desc" id="components-theorem-desc">未来会支持 theorem、lemma、definition、proof 等学术排版块。</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="placeholder-card">
+              <div class="placeholder-title">Theorem</div>
+              <div class="placeholder-desc">这一页以后会作为 theorem / proof 的独立弹出编辑器。</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="module-view is-hidden" id="module-view-assets" style="display:none !important">
+      <div class="subnav">
+        <button class="subnav-btn active" id="assets-subnav-references" type="button" onclick="setModule('assets')">References</button>
+        <button class="subnav-btn" id="assets-subnav-charts" type="button" onclick="openOverlayPage('assets', 'charts')">Charts</button>
+        <button class="subnav-btn" id="assets-subnav-captions" type="button" onclick="openOverlayPage('assets', 'captions')">Captions</button>
+      </div>
+
+      <div class="module-page" id="assets-page-references">
+        <section class="section">
+          <div class="section-body">
+            <div class="placeholder-grid">
+              <div class="hero-card">
+                <div class="hero-title" id="assets-hero-title">资源与引用</div>
+                <div class="hero-desc" id="assets-hero-desc">这里会集中处理 references、citations、charts 和 captions，让整份 deck 的资源管理更统一。</div>
+              </div>
+              <div class="placeholder-card">
+                <div class="placeholder-title" id="assets-references-title">References 管理</div>
+                <div class="placeholder-desc" id="assets-references-desc">后续会支持维护文献条目，在 slide 中插 citation，并生成 bibliography 页面。</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="assets-page-charts">
+        <section class="section">
+          <div class="section-head">
+            <div class="overlay-kicker">Asset Panel</div>
+            <div class="section-kicker">Charts</div>
+            <div class="section-title" id="assets-charts-title">Charts</div>
+            <div class="section-desc" id="assets-charts-desc">这里会支持从 CSV 或结构化数据快速插入学术风格图表。</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="placeholder-card">
+              <div class="placeholder-title">Charts</div>
+              <div class="placeholder-desc">这一页以后会作为图表插入器的独立弹出编辑器。</div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="assets-page-captions">
+        <section class="section">
+          <div class="section-head">
+            <div class="overlay-kicker">Asset Panel</div>
+            <div class="section-kicker">Captions</div>
+            <div class="section-title" id="assets-captions-title">Captions</div>
+            <div class="section-desc" id="assets-captions-desc">这里会集中管理 figure / table / equation 的标题、编号和引用文案。</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="placeholder-card">
+              <div class="placeholder-title">Captions</div>
+              <div class="placeholder-desc">这一页以后会作为 caption 与编号管理的独立弹出编辑器。</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="module-view is-hidden" id="module-view-settings">
+      <div class="subnav">
+        <button class="subnav-btn active" id="settings-subnav-language" type="button" onclick="setModule('settings')">Language</button>
+      </div>
+
+      <div class="module-page" id="settings-page-language">
+        <section class="section">
+          <div class="section-head">
+            <div class="section-kicker">Settings</div>
+            <div class="section-title" id="settings-title">设置</div>
+            <div class="section-desc" id="settings-desc">先从插件语言开始。后续其他偏好设置可以继续加在这里。</div>
+          </div>
+          <div class="section-body">
+            <div class="stack">
+              <div class="setting-card">
+                <div class="setting-head">
+                  <div>
+                    <div class="setting-title" id="language-setting-title">插件语言</div>
+                    <div class="setting-desc" id="language-setting-desc">切换 Sidebar 里的主要界面文案。</div>
+                  </div>
+                  <span class="pill accent" id="settings-beta-pill">Now</span>
+                </div>
+                <div class="field" style="margin-top:12px;">
+                  <label for="settings-language" id="settings-language-label">语言</label>
+                  <select id="settings-language">
+                    <option value="zh-CN">简体中文</option>
+                    <option value="en-US">English</option>
+                  </select>
+                </div>
+                <div class="btn-row" style="margin-top:12px;">
+                  <button class="btn btn-primary" id="save-settings-btn" onclick="saveSettings()">保存设置</button>
+                  <button class="btn btn-secondary" id="settings-go-deck-btn" onclick="setModule('deck')">回到 Deck</button>
+                </div>
+                <div class="toast" id="toast-settings"></div>
+              </div>
+
+              <div class="box soft" id="settings-placeholder">
+                这里先保留给未来设置，比如默认页码格式、默认同步策略或调试开关。
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <div class="overlay-backdrop is-hidden" id="overlay-backdrop" onclick="closeOverlayPage()"></div>
+</div>
+
+<!-- INJECT_UI_SCRIPT -->
+</body>
+</html>

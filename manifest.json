@@ -2,8 +2,8 @@
   "name": "Academic Slides Toolkit",
   "id": "academic-slides-toolkit",
   "api": "1.0.0",
-  "main": "code.js",
-  "ui": "ui.html",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
   "editorType": ["figma", "slides"],
   "documentAccess": "dynamic-page"
 }
