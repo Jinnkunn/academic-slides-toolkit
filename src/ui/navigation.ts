@@ -210,8 +210,8 @@ export function renderModuleShell(): void {
   const pageConfig: Record<string, string[]> = {
     deck: ["overview", "template", "sources", "sync"],
     equations: ["overview", "insert", "selected", "numbering"],
-    components: ["library", "figure", "theorem", "table", "crossref"],
-    assets: ["references", "charts", "captions"],
+    components: ["library", "figure", "theorem", "table", "crossref", "subfigure"],
+    assets: ["references", "charts"],
     settings: ["language", "consistency"],
   };
 

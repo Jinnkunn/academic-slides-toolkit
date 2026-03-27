@@ -18,6 +18,9 @@ import { onTheoremSelection, insertTheorem, updateTheorem, deleteTheorem, applyT
 import { onTableSelection, insertTable, updateTableCaption, deleteTable, applyTableNumbering, onTableInserted, onTableUpdated, onTableDeleted, onTableNumberingApplied } from "./tables-ui";
 import { insertCrossref, updateAllCrossrefs, onCrossrefInserted, onCrossrefsUpdated, onCrossrefTargetKindChange, updateCrossrefPreview, initCrossrefUI } from "./crossrefs-ui";
 import { runConsistencyCheck, autoFixIssue, autoFixAll, highlightIssueNode, onConsistencyResults, onIssueFixed, onAllFixed } from "./consistency-ui";
+import { loadReferences, addReference, importBibtex, deleteReference, insertCitation, updateAllCitations, generateBibSlide, onReferencesLoaded, onReferenceAdded, onBibtexImported, onReferenceDeleted, onCitationInserted, onCitationsUpdated, onBibSlideGenerated, initReferencesUI } from "./references-ui";
+import { insertChart, deleteChart, onChartSelection, onChartInserted, onChartDeleted, initChartUI } from "./charts-ui";
+import { insertSubfigure, updateSubfigure, deleteSubfigure, applySubfigureNumbering, onSubfigureSelection, onSubfigureInserted, onSubfigureUpdated, onSubfigureDeleted, onSubfigureNumberingApplied, onSubfigureLayoutChange } from "./subfigures-ui";
 import { send, toast, getErrorToastScope, localizeBackendMessage } from "./utils";
 import { t, applyLanguage } from "./i18n";
 
@@ -95,6 +98,26 @@ Object.assign(window, {
   autoFixAll,
   highlightIssueNode,
 
+  // References & Citations
+  loadReferences,
+  addReference,
+  importBibtex,
+  deleteReference,
+  insertCitation,
+  updateAllCitations,
+  generateBibSlide,
+
+  // Charts
+  insertChart,
+  deleteChart,
+
+  // Subfigures
+  insertSubfigure,
+  updateSubfigure,
+  deleteSubfigure,
+  applySubfigureNumbering,
+  onSubfigureLayoutChange,
+
   // Settings
   saveSettings,
 
@@ -121,6 +144,8 @@ window.onmessage = (event: MessageEvent) => {
       onFigureSelection(message.figure, true);
       onTheoremSelection(message.theorem, true);
       onTableSelection(message.table, true);
+      onChartSelection(message.chart, true);
+      onSubfigureSelection(message.subfigure, true);
       break;
     case "templates":
       onTemplates(message.templates);
@@ -222,6 +247,48 @@ window.onmessage = (event: MessageEvent) => {
     case "all-fixed":
       onAllFixed(message);
       break;
+    // References & Citations
+    case "references-loaded":
+      onReferencesLoaded(message);
+      break;
+    case "reference-added":
+      onReferenceAdded(message);
+      break;
+    case "bibtex-imported":
+      onBibtexImported(message);
+      break;
+    case "reference-deleted":
+      onReferenceDeleted(message);
+      break;
+    case "citation-inserted":
+      onCitationInserted(message);
+      break;
+    case "citations-updated":
+      onCitationsUpdated(message);
+      break;
+    case "bib-slide-generated":
+      onBibSlideGenerated(message);
+      break;
+    // Charts
+    case "chart-inserted":
+      onChartInserted(message);
+      break;
+    case "chart-deleted":
+      onChartDeleted();
+      break;
+    // Subfigures
+    case "subfigure-inserted":
+      onSubfigureInserted(message);
+      break;
+    case "subfigure-updated":
+      onSubfigureUpdated(message);
+      break;
+    case "subfigure-deleted":
+      onSubfigureDeleted();
+      break;
+    case "subfigure-numbering-applied":
+      onSubfigureNumberingApplied(message);
+      break;
     case "error":
       toast(getErrorToastScope(), localizeBackendMessage(message.message, message.errorKey, message.errorVars), "error");
       break;
@@ -239,6 +306,8 @@ send("get-templates");
 send("get-settings");
 initSnippets();
 initCrossrefUI();
+initReferencesUI();
+initChartUI();
 
 document.addEventListener("keydown", (event: KeyboardEvent) => {
   if (event.key === "Escape") {

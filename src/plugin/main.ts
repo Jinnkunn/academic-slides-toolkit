@@ -6,6 +6,9 @@ import { handleInsertFigure, handleUpdateFigureCaption, handleDeleteFigure, hand
 import { handleInsertTheorem, handleUpdateTheorem, handleDeleteTheorem, handleApplyTheoremNumbering, findTheoremRoot, serializeTheoremNode } from "./theorems";
 import { handleInsertTable, handleUpdateTableCaption, handleDeleteTable, handleApplyTableNumbering, findTableRoot, serializeTableNode } from "./tables";
 import { handleInsertCrossref, handleUpdateAllCrossrefs } from "./crossrefs";
+import { handleGetReferences, handleAddReference, handleImportBibtex, handleDeleteReference, handleInsertCitation, handleUpdateAllCitations, handleGenerateBibliographySlide, findCitationRoot, serializeCitationNode } from "./references";
+import { handleInsertChart, handleDeleteChart, findChartRoot, serializeChartNode } from "./charts";
+import { handleInsertSubfigure, handleUpdateSubfigure, handleDeleteSubfigure, handleApplySubfigureNumbering, findSubfigureRoot, serializeSubfigureNode } from "./subfigures";
 import { handleRunConsistencyCheck, handleAutoFixIssue, handleAutoFixAll, handleFocusNode } from "./consistency";
 import { postError } from "./errors";
 import { getStorage } from "./storage";
@@ -68,10 +71,16 @@ figma.ui.onmessage = async (message: any) => {
         const figRoot = selNode ? findFigureRoot(selNode) : null;
         const thmRoot = selNode ? findTheoremRoot(selNode) : null;
         const tblRoot = selNode ? findTableRoot(selNode) : null;
+        const citRoot = selNode ? findCitationRoot(selNode) : null;
+        const chartRoot = selNode ? findChartRoot(selNode) : null;
+        const subfigRoot = selNode ? findSubfigureRoot(selNode) : null;
         await handleGetSelection({
           figure: serializeFigureNode(figRoot),
           theorem: serializeTheoremNode(thmRoot),
           table: serializeTableNode(tblRoot),
+          citation: serializeCitationNode(citRoot),
+          chart: serializeChartNode(chartRoot),
+          subfigure: serializeSubfigureNode(subfigRoot),
         });
         break;
       }
@@ -174,6 +183,48 @@ figma.ui.onmessage = async (message: any) => {
       case "focus-node":
         handleFocusNode(message);
         break;
+      // References & Citations
+      case "get-references":
+        await handleGetReferences(message);
+        break;
+      case "add-reference":
+        await handleAddReference(message);
+        break;
+      case "import-bibtex":
+        await handleImportBibtex(message);
+        break;
+      case "delete-reference":
+        await handleDeleteReference(message);
+        break;
+      case "insert-citation":
+        await handleInsertCitation(message);
+        break;
+      case "update-all-citations":
+        await handleUpdateAllCitations(message);
+        break;
+      case "generate-bib-slide":
+        await handleGenerateBibliographySlide(message);
+        break;
+      // Charts
+      case "insert-chart":
+        await handleInsertChart(message);
+        break;
+      case "delete-chart":
+        await handleDeleteChart(message);
+        break;
+      // Subfigures
+      case "insert-subfigure":
+        await handleInsertSubfigure(message);
+        break;
+      case "update-subfigure":
+        await handleUpdateSubfigure(message);
+        break;
+      case "delete-subfigure":
+        await handleDeleteSubfigure(message);
+        break;
+      case "apply-subfigure-numbering":
+        await handleApplySubfigureNumbering(message);
+        break;
       default:
         break;
     }
@@ -196,6 +247,9 @@ figma.on("selectionchange", () => {
     figure: serializeFigureNode(selNode ? findFigureRoot(selNode) : null),
     theorem: serializeTheoremNode(selNode ? findTheoremRoot(selNode) : null),
     table: serializeTableNode(selNode ? findTableRoot(selNode) : null),
+    citation: serializeCitationNode(selNode ? findCitationRoot(selNode) : null),
+    chart: serializeChartNode(selNode ? findChartRoot(selNode) : null),
+    subfigure: serializeSubfigureNode(selNode ? findSubfigureRoot(selNode) : null),
   });
 });
 
