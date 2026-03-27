@@ -14,6 +14,9 @@ import {
 } from "./deck-ui";
 import { applySettings, saveSettings, onSettingsReceived, onSettingsSaved } from "./settings-ui";
 import { onFigureSelection, insertFigure, updateFigureCaption, deleteFigure, applyFigureNumbering, onFigureInserted, onFigureUpdated, onFigureDeleted, onFigureNumberingApplied } from "./figures-ui";
+import { onTheoremSelection, insertTheorem, updateTheorem, deleteTheorem, applyTheoremNumbering, onTheoremInserted, onTheoremUpdated, onTheoremDeleted, onTheoremNumberingApplied } from "./theorems-ui";
+import { onTableSelection, insertTable, updateTableCaption, deleteTable, applyTableNumbering, onTableInserted, onTableUpdated, onTableDeleted, onTableNumberingApplied } from "./tables-ui";
+import { insertCrossref, updateAllCrossrefs, onCrossrefInserted, onCrossrefsUpdated, onCrossrefTargetKindChange, updateCrossrefPreview, initCrossrefUI } from "./crossrefs-ui";
 import { send, toast, getErrorToastScope, localizeBackendMessage } from "./utils";
 import { t, applyLanguage } from "./i18n";
 
@@ -67,6 +70,24 @@ Object.assign(window, {
   deleteFigure,
   applyFigureNumbering,
 
+  // Theorems
+  insertTheorem,
+  updateTheorem,
+  deleteTheorem,
+  applyTheoremNumbering,
+
+  // Tables
+  insertTable,
+  updateTableCaption,
+  deleteTable,
+  applyTableNumbering,
+
+  // Cross-references
+  insertCrossref,
+  updateAllCrossrefs,
+  onCrossrefTargetKindChange,
+  updateCrossrefPreview,
+
   // Settings
   saveSettings,
 
@@ -91,6 +112,8 @@ window.onmessage = (event: MessageEvent) => {
       onSelection(message.node);
       onEquationSelection(message.equation, true);
       onFigureSelection(message.figure, true);
+      onTheoremSelection(message.theorem, true);
+      onTableSelection(message.table, true);
       break;
     case "templates":
       onTemplates(message.templates);
@@ -153,6 +176,36 @@ window.onmessage = (event: MessageEvent) => {
     case "figure-numbering-applied":
       onFigureNumberingApplied(message);
       break;
+    case "theorem-inserted":
+      onTheoremInserted(message);
+      break;
+    case "theorem-updated":
+      onTheoremUpdated(message);
+      break;
+    case "theorem-deleted":
+      onTheoremDeleted();
+      break;
+    case "theorem-numbering-applied":
+      onTheoremNumberingApplied(message);
+      break;
+    case "table-inserted":
+      onTableInserted(message);
+      break;
+    case "table-updated":
+      onTableUpdated(message);
+      break;
+    case "table-deleted":
+      onTableDeleted();
+      break;
+    case "table-numbering-applied":
+      onTableNumberingApplied(message);
+      break;
+    case "crossref-inserted":
+      onCrossrefInserted(message);
+      break;
+    case "crossrefs-updated":
+      onCrossrefsUpdated(message);
+      break;
     case "error":
       toast(getErrorToastScope(), localizeBackendMessage(message.message, message.errorKey, message.errorVars), "error");
       break;
@@ -169,6 +222,7 @@ send("get-selection");
 send("get-templates");
 send("get-settings");
 initSnippets();
+initCrossrefUI();
 
 document.addEventListener("keydown", (event: KeyboardEvent) => {
   if (event.key === "Escape") {

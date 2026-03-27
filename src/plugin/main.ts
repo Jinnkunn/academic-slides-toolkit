@@ -3,6 +3,9 @@
 import { handleGetSelection, handleInsertEquation, handleUpdateEquation, handleDeleteEquation, handleApplyEquationNumbering, handleClearEquationNumbering } from "./equations";
 import { handleSetTemplate, handleUpdateTemplateConfig, handleApplyToAll, handleSyncAll, handleRemoveTemplateInstances, handleGetTemplates, handleDeleteTemplate, handleCheckVariableCandidate, handleSaveVariables } from "./templates";
 import { handleInsertFigure, handleUpdateFigureCaption, handleDeleteFigure, handleApplyFigureNumbering, findFigureRoot, serializeFigureNode } from "./figures";
+import { handleInsertTheorem, handleUpdateTheorem, handleDeleteTheorem, handleApplyTheoremNumbering, findTheoremRoot, serializeTheoremNode } from "./theorems";
+import { handleInsertTable, handleUpdateTableCaption, handleDeleteTable, handleApplyTableNumbering, findTableRoot, serializeTableNode } from "./tables";
+import { handleInsertCrossref, handleUpdateAllCrossrefs } from "./crossrefs";
 import { postError } from "./errors";
 import { getStorage } from "./storage";
 import { normalizeSettings } from "./normalize";
@@ -62,7 +65,13 @@ figma.ui.onmessage = async (message: any) => {
         const sel = figma.currentPage.selection;
         const selNode = sel.length > 0 ? sel[0] : null;
         const figRoot = selNode ? findFigureRoot(selNode) : null;
-        await handleGetSelection({ figure: serializeFigureNode(figRoot) });
+        const thmRoot = selNode ? findTheoremRoot(selNode) : null;
+        const tblRoot = selNode ? findTableRoot(selNode) : null;
+        await handleGetSelection({
+          figure: serializeFigureNode(figRoot),
+          theorem: serializeTheoremNode(thmRoot),
+          table: serializeTableNode(tblRoot),
+        });
         break;
       }
       case "get-pages":
@@ -122,6 +131,36 @@ figma.ui.onmessage = async (message: any) => {
       case "apply-figure-numbering":
         await handleApplyFigureNumbering(message);
         break;
+      case "insert-theorem":
+        await handleInsertTheorem(message);
+        break;
+      case "update-theorem":
+        await handleUpdateTheorem(message);
+        break;
+      case "delete-theorem":
+        await handleDeleteTheorem(message);
+        break;
+      case "apply-theorem-numbering":
+        await handleApplyTheoremNumbering(message);
+        break;
+      case "insert-table":
+        await handleInsertTable(message);
+        break;
+      case "update-table-caption":
+        await handleUpdateTableCaption(message);
+        break;
+      case "delete-table":
+        await handleDeleteTable(message);
+        break;
+      case "apply-table-numbering":
+        await handleApplyTableNumbering(message);
+        break;
+      case "insert-crossref":
+        await handleInsertCrossref(message);
+        break;
+      case "update-all-crossrefs":
+        await handleUpdateAllCrossrefs(message);
+        break;
       default:
         break;
     }
@@ -140,8 +179,11 @@ figma.ui.onmessage = async (message: any) => {
 figma.on("selectionchange", () => {
   const sel = figma.currentPage.selection;
   const selNode = sel.length > 0 ? sel[0] : null;
-  const figRoot = selNode ? findFigureRoot(selNode) : null;
-  handleGetSelection({ figure: serializeFigureNode(figRoot) });
+  handleGetSelection({
+    figure: serializeFigureNode(selNode ? findFigureRoot(selNode) : null),
+    theorem: serializeTheoremNode(selNode ? findTheoremRoot(selNode) : null),
+    table: serializeTableNode(selNode ? findTableRoot(selNode) : null),
+  });
 });
 
 handleGetSelection();

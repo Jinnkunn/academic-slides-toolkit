@@ -1616,6 +1616,8 @@ input[type=number]::-webkit-outer-spin-button {
         <button class="subnav-btn active" id="components-subnav-library" type="button" onclick="setModule('components')">Library</button>
         <button class="subnav-btn" id="components-subnav-figure" type="button" onclick="openOverlayPage('components', 'figure')">Figure</button>
         <button class="subnav-btn" id="components-subnav-theorem" type="button" onclick="openOverlayPage('components', 'theorem')">Theorem</button>
+        <button class="subnav-btn" id="components-subnav-table" type="button" onclick="openOverlayPage('components', 'table')">Table</button>
+        <button class="subnav-btn" id="components-subnav-crossref" type="button" onclick="openOverlayPage('components', 'crossref')">Refs</button>
       </div>
 
       <div class="module-page" id="components-page-library">
@@ -1636,6 +1638,16 @@ input[type=number]::-webkit-outer-spin-button {
                   <div class="quick-kicker" id="components-card-theorem-kicker">Math</div>
                   <div class="quick-title" id="components-card-theorem-title">Theorem / Proof</div>
                   <div class="quick-desc" id="components-card-theorem-desc">快速搭出规范一致的数学内容块。</div>
+                </button>
+                <button class="quick-card" type="button" onclick="openOverlayPage('components', 'table')">
+                  <div class="quick-kicker">Table</div>
+                  <div class="quick-title" id="components-card-table-title">Table + Caption</div>
+                  <div class="quick-desc" id="components-card-table-desc">创建学术表格，caption 在上方。</div>
+                </button>
+                <button class="quick-card" type="button" onclick="openOverlayPage('components', 'crossref')">
+                  <div class="quick-kicker">Refs</div>
+                  <div class="quick-title" id="components-card-crossref-title">交叉引用</div>
+                  <div class="quick-desc" id="components-card-crossref-desc">插入 (Fig. 1) (Eq. 3) 等引用标记。</div>
                 </button>
               </div>
             </div>
@@ -1710,16 +1722,146 @@ input[type=number]::-webkit-outer-spin-button {
           <div class="section-head">
             <div class="overlay-kicker">Component Panel</div>
             <div class="section-kicker">Theorem</div>
-            <div class="section-title" id="components-theorem-title">Theorem 组件</div>
-            <div class="section-desc" id="components-theorem-desc">未来会支持 theorem、lemma、definition、proof 等学术排版块。</div>
+            <div class="section-title" id="components-theorem-title">Theorem / Proof / Definition</div>
+            <div class="section-desc" id="components-theorem-desc">创建带左侧色条的学术定理块，支持按类型自动编号。</div>
             <div class="overlay-actions">
               <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
             </div>
           </div>
           <div class="section-body">
-            <div class="placeholder-card">
-              <div class="placeholder-title">Theorem</div>
-              <div class="placeholder-desc">这一页以后会作为 theorem / proof 的独立弹出编辑器。</div>
+            <div class="stack">
+              <div class="status" id="theorem-selected-status">当前未选中 Theorem。插入新的或在画布中选中已有块。</div>
+
+              <div class="field">
+                <label for="theorem-type-select" id="theorem-type-label">类型</label>
+                <select id="theorem-type-select">
+                  <option value="theorem">Theorem</option>
+                  <option value="lemma">Lemma</option>
+                  <option value="definition">Definition</option>
+                  <option value="proof">Proof</option>
+                  <option value="corollary">Corollary</option>
+                  <option value="proposition">Proposition</option>
+                  <option value="remark">Remark</option>
+                  <option value="example">Example</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="theorem-title-input" id="theorem-title-label">标题（可选）</label>
+                <input type="text" id="theorem-title-input" placeholder="例如：Bayes' Theorem">
+              </div>
+              <div class="field">
+                <label for="theorem-body-input" id="theorem-body-label">内容</label>
+                <textarea class="equation-textarea" id="theorem-body-input" style="min-height:80px" placeholder="定理内容..."></textarea>
+              </div>
+
+              <div class="btn-row action-bar">
+                <button class="btn btn-primary" id="theorem-insert-btn" type="button" onclick="insertTheorem()">插入</button>
+                <button class="btn btn-secondary" id="theorem-update-btn" type="button" onclick="updateTheorem()" disabled>更新</button>
+              </div>
+              <button class="btn btn-danger-quiet" id="theorem-delete-btn" type="button" onclick="deleteTheorem()" disabled style="margin-top:4px">删除</button>
+
+              <div style="border-top:1px solid var(--line); padding-top:10px; margin-top:6px">
+                <div class="field">
+                  <label for="theorem-numbering-scope" id="theorem-numbering-scope-label">编号范围</label>
+                  <select id="theorem-numbering-scope">
+                    <option value="all">整份 deck</option>
+                    <option value="current">仅当前 slide</option>
+                  </select>
+                </div>
+                <button class="btn btn-secondary" id="theorem-numbering-btn" type="button" onclick="applyTheoremNumbering()" style="margin-top:8px">按类型重新编号</button>
+              </div>
+              <div class="toast" id="toast-theorems"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="components-page-table">
+        <section class="section">
+          <div class="section-head">
+            <div class="section-title">Table + Caption</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="stack">
+              <div class="status" id="table-selected-status">当前未选中 Table。</div>
+              <div class="field">
+                <label for="table-caption-input">Caption</label>
+                <input type="text" id="table-caption-input" placeholder="例如：实验数据对比">
+              </div>
+              <div class="field">
+                <label for="table-label-prefix">编号前缀</label>
+                <select id="table-label-prefix">
+                  <option value="Table">Table</option>
+                  <option value="表">表</option>
+                </select>
+              </div>
+              <div class="row">
+                <div class="grow field">
+                  <label for="table-rows">行数</label>
+                  <input type="number" id="table-rows" min="1" max="20" value="3">
+                </div>
+                <div class="grow field">
+                  <label for="table-cols">列数</label>
+                  <input type="number" id="table-cols" min="1" max="10" value="3">
+                </div>
+              </div>
+              <div class="btn-row action-bar">
+                <button class="btn btn-primary" type="button" onclick="insertTable()">插入 Table</button>
+                <button class="btn btn-secondary" id="table-update-btn" type="button" onclick="updateTableCaption()" disabled>更新 Caption</button>
+              </div>
+              <button class="btn btn-danger-quiet" id="table-delete-btn" type="button" onclick="deleteTable()" disabled style="margin-top:4px">删除 Table</button>
+              <div style="border-top:1px solid var(--line); padding-top:10px; margin-top:6px">
+                <div class="field">
+                  <label for="table-numbering-scope">编号范围</label>
+                  <select id="table-numbering-scope">
+                    <option value="all">整份 deck</option>
+                    <option value="current">仅当前 slide</option>
+                  </select>
+                </div>
+                <button class="btn btn-secondary" type="button" onclick="applyTableNumbering()" style="margin-top:8px">重新编号全部 Table</button>
+              </div>
+              <div class="toast" id="toast-tables"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="components-page-crossref">
+        <section class="section">
+          <div class="section-head">
+            <div class="section-title">交叉引用</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="stack">
+              <div class="field">
+                <label for="crossref-target-kind">引用类型</label>
+                <select id="crossref-target-kind" onchange="onCrossrefTargetKindChange()">
+                  <option value="equation">Equation</option>
+                  <option value="figure">Figure</option>
+                  <option value="table">Table</option>
+                  <option value="theorem">Theorem</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="crossref-format">格式</label>
+                <select id="crossref-format" onchange="updateCrossrefPreview()"></select>
+              </div>
+              <div class="field">
+                <label for="crossref-index">编号</label>
+                <input type="number" id="crossref-index" min="1" value="1" oninput="updateCrossrefPreview()">
+              </div>
+              <div class="status" id="crossref-preview" style="text-align:center; font-size:14px; font-weight:700">(Eq. 1)</div>
+              <div class="btn-row action-bar">
+                <button class="btn btn-primary" type="button" onclick="insertCrossref()">插入引用</button>
+                <button class="btn btn-secondary" type="button" onclick="updateAllCrossrefs()">刷新全部引用</button>
+              </div>
+              <div class="toast" id="toast-crossrefs"></div>
             </div>
           </div>
         </section>
