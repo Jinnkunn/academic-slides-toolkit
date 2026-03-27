@@ -17,6 +17,7 @@ import { onFigureSelection, insertFigure, updateFigureCaption, deleteFigure, app
 import { onTheoremSelection, insertTheorem, updateTheorem, deleteTheorem, applyTheoremNumbering, onTheoremInserted, onTheoremUpdated, onTheoremDeleted, onTheoremNumberingApplied } from "./theorems-ui";
 import { onTableSelection, insertTable, updateTableCaption, deleteTable, applyTableNumbering, onTableInserted, onTableUpdated, onTableDeleted, onTableNumberingApplied } from "./tables-ui";
 import { insertCrossref, updateAllCrossrefs, onCrossrefInserted, onCrossrefsUpdated, onCrossrefTargetKindChange, updateCrossrefPreview, initCrossrefUI } from "./crossrefs-ui";
+import { runConsistencyCheck, autoFixIssue, autoFixAll, highlightIssueNode, onConsistencyResults, onIssueFixed, onAllFixed } from "./consistency-ui";
 import { send, toast, getErrorToastScope, localizeBackendMessage } from "./utils";
 import { t, applyLanguage } from "./i18n";
 
@@ -87,6 +88,12 @@ Object.assign(window, {
   updateAllCrossrefs,
   onCrossrefTargetKindChange,
   updateCrossrefPreview,
+
+  // Consistency
+  runConsistencyCheck,
+  autoFixIssue,
+  autoFixAll,
+  highlightIssueNode,
 
   // Settings
   saveSettings,
@@ -205,6 +212,15 @@ window.onmessage = (event: MessageEvent) => {
       break;
     case "crossrefs-updated":
       onCrossrefsUpdated(message);
+      break;
+    case "consistency-results":
+      onConsistencyResults(message);
+      break;
+    case "issue-fixed":
+      onIssueFixed(message);
+      break;
+    case "all-fixed":
+      onAllFixed(message);
       break;
     case "error":
       toast(getErrorToastScope(), localizeBackendMessage(message.message, message.errorKey, message.errorVars), "error");

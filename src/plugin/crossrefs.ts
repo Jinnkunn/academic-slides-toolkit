@@ -176,7 +176,7 @@ export async function handleInsertCrossref(message: any): Promise<void> {
 
 // ── Build numbering map for a given kind ─────────────────────────────────────
 
-async function buildNumberingMap(
+export async function buildNumberingMap(
   targetKind: string,
   scope: string,
   currentTargetId: string

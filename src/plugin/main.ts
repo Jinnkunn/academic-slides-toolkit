@@ -6,6 +6,7 @@ import { handleInsertFigure, handleUpdateFigureCaption, handleDeleteFigure, hand
 import { handleInsertTheorem, handleUpdateTheorem, handleDeleteTheorem, handleApplyTheoremNumbering, findTheoremRoot, serializeTheoremNode } from "./theorems";
 import { handleInsertTable, handleUpdateTableCaption, handleDeleteTable, handleApplyTableNumbering, findTableRoot, serializeTableNode } from "./tables";
 import { handleInsertCrossref, handleUpdateAllCrossrefs } from "./crossrefs";
+import { handleRunConsistencyCheck, handleAutoFixIssue, handleAutoFixAll, handleFocusNode } from "./consistency";
 import { postError } from "./errors";
 import { getStorage } from "./storage";
 import { normalizeSettings } from "./normalize";
@@ -160,6 +161,18 @@ figma.ui.onmessage = async (message: any) => {
         break;
       case "update-all-crossrefs":
         await handleUpdateAllCrossrefs(message);
+        break;
+      case "run-consistency-check":
+        await handleRunConsistencyCheck(message);
+        break;
+      case "auto-fix-issue":
+        await handleAutoFixIssue(message);
+        break;
+      case "auto-fix-all":
+        await handleAutoFixAll(message);
+        break;
+      case "focus-node":
+        handleFocusNode(message);
         break;
       default:
         break;
