@@ -45,12 +45,14 @@ export function isTextNode(node: any): boolean {
   return !!node && node.type === "TEXT";
 }
 
-export function walkScene(node: any, visit: (node: any) => void): void {
-  if (!node) return;
+const MAX_WALK_DEPTH = 64;
+
+export function walkScene(node: any, visit: (node: any) => void, _depth: number = 0): void {
+  if (!node || _depth > MAX_WALK_DEPTH) return;
   visit(node);
   if ("children" in node) {
     for (let index = 0; index < node.children.length; index++) {
-      walkScene(node.children[index], visit);
+      walkScene(node.children[index], visit, _depth + 1);
     }
   }
 }
