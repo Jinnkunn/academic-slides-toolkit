@@ -15,7 +15,8 @@ import {
 } from "./slides";
 import { getAbsolutePosition } from "./layout";
 
-export const SUBFIGURE_KIND = "subfigure";
+import { AcademicNodeKind } from "./types";
+export const SUBFIGURE_KIND = AcademicNodeKind.Subfigure;
 
 // ── Plugin data helpers ─────────────────────────────────────────────────────
 

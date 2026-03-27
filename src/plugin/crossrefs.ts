@@ -18,7 +18,8 @@ import { collectFigureRoots, FIGURE_KIND } from "./figures";
 import { collectTheoremRoots, THEOREM_KIND } from "./theorems";
 import { collectTableRoots, TABLE_KIND } from "./tables";
 
-export const CROSSREF_KIND = "crossref";
+import { AcademicNodeKind } from "./types";
+export const CROSSREF_KIND = AcademicNodeKind.Crossref;
 
 // ── Preset format options ────────────────────────────────────────────────────
 

@@ -15,7 +15,8 @@ import {
 } from "./slides";
 import { getAbsolutePosition } from "./layout";
 
-export const THEOREM_KIND = "theorem";
+import { AcademicNodeKind } from "./types";
+export const THEOREM_KIND = AcademicNodeKind.Theorem;
 
 export type TheoremType =
   | "theorem"

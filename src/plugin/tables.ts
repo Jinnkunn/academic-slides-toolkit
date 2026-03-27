@@ -15,7 +15,8 @@ import {
 } from "./slides";
 import { getAbsolutePosition } from "./layout";
 
-export const TABLE_KIND = "table";
+import { AcademicNodeKind } from "./types";
+export const TABLE_KIND = AcademicNodeKind.Table;
 
 // ── Plugin data helpers ─────────────────────────────────────────────────────
 

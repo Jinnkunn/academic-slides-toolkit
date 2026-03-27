@@ -15,7 +15,8 @@ import {
 } from "./slides";
 import { getAbsolutePosition } from "./layout";
 
-export const CHART_KIND = "chart";
+import { AcademicNodeKind } from "./types";
+export const CHART_KIND = AcademicNodeKind.Chart;
 
 const CHART_PALETTE = [
   "#4A90D9",

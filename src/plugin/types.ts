@@ -94,6 +94,28 @@ export interface TemplateConfig {
   createdAt: number;
 }
 
+// ── Academic Node Kind Registry ──────────────────────────────────────────
+
+/** All academic node kinds managed by this plugin — single source of truth. */
+export const AcademicNodeKind = {
+  Equation: "equation",
+  Figure: "figure",
+  Table: "table",
+  Theorem: "theorem",
+  Crossref: "crossref",
+  Citation: "citation",
+  Chart: "chart",
+  Subfigure: "subfigure",
+  Appendix: "appendix",
+  AppendixLink: "appendix-link",
+  SlideTemplate: "slide-template",
+} as const;
+
+export type AcademicNodeKindValue = typeof AcademicNodeKind[keyof typeof AcademicNodeKind];
+
+/** Runtime set of all valid academic node kinds. */
+export const ACADEMIC_NODE_KINDS = new Set<string>(Object.values(AcademicNodeKind));
+
 /** Normalized equation insert/update payload. */
 export interface EquationPayload {
   latex: string;

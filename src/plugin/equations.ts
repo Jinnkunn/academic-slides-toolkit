@@ -15,7 +15,8 @@ import {
 } from "./slides";
 import { getAbsolutePosition } from "./layout";
 
-export const EQUATION_KIND = "equation";
+import { AcademicNodeKind } from "./types";
+export const EQUATION_KIND = AcademicNodeKind.Equation;
 
 // ── Core helpers ────────────────────────────────────────────────────────────
 

@@ -15,7 +15,8 @@ import {
 } from "./slides";
 import { getAbsolutePosition } from "./layout";
 
-export const FIGURE_KIND = "figure";
+import { AcademicNodeKind } from "./types";
+export const FIGURE_KIND = AcademicNodeKind.Figure;
 
 // ── Plugin data helpers ─────────────────────────────────────────────────────
 

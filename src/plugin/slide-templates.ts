@@ -4,7 +4,8 @@
 
 import { postError } from "./errors";
 
-export const SLIDE_TEMPLATE_KIND = "slide-template";
+import { AcademicNodeKind } from "./types";
+export const SLIDE_TEMPLATE_KIND = AcademicNodeKind.SlideTemplate;
 
 const SLIDE_W = 1280;
 const SLIDE_H = 720;

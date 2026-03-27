@@ -152,211 +152,105 @@ Object.assign(window, {
 (window as any).renderSyncStep = renderSyncStep;
 (window as any).renderBindNote = renderBindNote;
 
-// Message handler
+// ── Response table — registry replaces the 61-case switch ───────────────
+
+type ResponseHandler = (message: any) => void;
+
+const responses: Record<string, ResponseHandler> = {
+  // Selection & Navigation
+  "selection": (m) => {
+    onSelection(m.node);
+    onEquationSelection(m.equation, true);
+    onFigureSelection(m.figure, true);
+    onTheoremSelection(m.theorem, true);
+    onTableSelection(m.table, true);
+    onChartSelection(m.chart, true);
+    onSubfigureSelection(m.subfigure, true);
+  },
+  "pages":                      (m) => onPagesReceived(m),
+  // Settings
+  "settings":                   (m) => onSettingsReceived(m),
+  "settings-saved":             (m) => onSettingsSaved(m),
+  // Templates
+  "templates":                  (m) => onTemplates(m.templates),
+  "template-saved":             (m) => onTemplateSaved(m),
+  "config-saved":               () => onConfigSaved(),
+  "apply-complete":             (m) => onApplyComplete(m),
+  "sync-complete":              (m) => onSyncComplete(m),
+  "remove-complete":            (m) => { toast("sync", t("removedTemplateInstancesDone", { count: m.removed }), "success"); send("get-templates"); },
+  "variable-candidate":         (m) => onVarCandidate(m),
+  "variables-saved":            () => onVariablesSaved(),
+  // Equations
+  "equation-inserted":          (m) => onEquationInserted(m),
+  "equation-updated":           (m) => onEquationUpdated(m),
+  "equation-deleted":           () => onEquationDeleted(),
+  "equation-numbering-applied": (m) => onEquationNumberingApplied(m),
+  "equation-numbering-cleared": (m) => onEquationNumberingCleared(m),
+  // Figures
+  "figure-inserted":            (m) => onFigureInserted(m),
+  "figure-updated":             (m) => onFigureUpdated(m),
+  "figure-deleted":             () => onFigureDeleted(),
+  "figure-numbering-applied":   (m) => onFigureNumberingApplied(m),
+  // Theorems
+  "theorem-inserted":           (m) => onTheoremInserted(m),
+  "theorem-updated":            (m) => onTheoremUpdated(m),
+  "theorem-deleted":            () => onTheoremDeleted(),
+  "theorem-numbering-applied":  (m) => onTheoremNumberingApplied(m),
+  // Tables
+  "table-inserted":             (m) => onTableInserted(m),
+  "table-updated":              (m) => onTableUpdated(m),
+  "table-deleted":              () => onTableDeleted(),
+  "table-numbering-applied":    (m) => onTableNumberingApplied(m),
+  // Cross-references
+  "crossref-inserted":          (m) => onCrossrefInserted(m),
+  "crossrefs-updated":          (m) => onCrossrefsUpdated(m),
+  // Consistency
+  "consistency-results":        (m) => onConsistencyResults(m),
+  "issue-fixed":                (m) => onIssueFixed(m),
+  "all-fixed":                  (m) => onAllFixed(m),
+  // References & Citations
+  "references-loaded":          (m) => onReferencesLoaded(m),
+  "reference-added":            (m) => onReferenceAdded(m),
+  "bibtex-imported":            (m) => onBibtexImported(m),
+  "reference-deleted":          (m) => onReferenceDeleted(m),
+  "citation-inserted":          (m) => onCitationInserted(m),
+  "citations-updated":          (m) => onCitationsUpdated(m),
+  "bib-slide-generated":        (m) => onBibSlideGenerated(m),
+  // Charts
+  "chart-inserted":             (m) => onChartInserted(m),
+  "chart-deleted":              () => onChartDeleted(),
+  // Subfigures
+  "subfigure-inserted":         (m) => onSubfigureInserted(m),
+  "subfigure-updated":          (m) => onSubfigureUpdated(m),
+  "subfigure-deleted":          () => onSubfigureDeleted(),
+  "subfigure-numbering-applied":(m) => onSubfigureNumberingApplied(m),
+  // Slide Templates
+  "slide-template-inserted":    (m) => onSlideTemplateInserted(m),
+  // Speaker Cues
+  "speaker-cues-loaded":        (m) => onSpeakerCuesLoaded(m),
+  "speaker-cue-saved":          (m) => onSpeakerCueSaved(m),
+  "auto-estimate-complete":     (m) => onAutoEstimateComplete(m),
+  "speaker-cues-cleared":       (m) => onCuesCleared(m),
+  "time-budget-slide-generated":(m) => onTimeBudgetGenerated(m),
+  // Appendix
+  "appendix-info":              (m) => onAppendixInfoLoaded(m),
+  "appendix-divider-inserted":  (m) => onAppendixDividerInserted(m),
+  "backup-link-inserted":       (m) => onBackupLinkInserted(m),
+  "back-link-inserted":         (m) => onBackLinkInserted(m),
+  "appendix-links-updated":     (m) => onAppendixLinksUpdated(m),
+  "appendix-reordered":         (m) => onAppendixReordered(m),
+  // System
+  "error":                      (m) => toast(getErrorToastScope(), localizeBackendMessage(m.message, m.errorKey, m.errorVars), "error"),
+  "progress":                   (m) => toast(getErrorToastScope(), t("progressMessage", { current: m.current + 1, total: m.total }), "info"),
+};
+
+// ── Dispatcher ──────────────────────────────────────────────────────────
+
 window.onmessage = (event: MessageEvent) => {
   const message = event.data?.pluginMessage || event.data;
-  if (!message || !message.type) return;
-
-  switch (message.type) {
-    case "selection":
-      onSelection(message.node);
-      onEquationSelection(message.equation, true);
-      onFigureSelection(message.figure, true);
-      onTheoremSelection(message.theorem, true);
-      onTableSelection(message.table, true);
-      onChartSelection(message.chart, true);
-      onSubfigureSelection(message.subfigure, true);
-      break;
-    case "templates":
-      onTemplates(message.templates);
-      break;
-    case "template-saved":
-      onTemplateSaved(message);
-      break;
-    case "pages":
-      onPagesReceived(message);
-      break;
-    case "settings":
-      onSettingsReceived(message);
-      break;
-    case "settings-saved":
-      onSettingsSaved(message);
-      break;
-    case "config-saved":
-      onConfigSaved();
-      break;
-    case "apply-complete":
-      onApplyComplete(message);
-      break;
-    case "sync-complete":
-      onSyncComplete(message);
-      break;
-    case "remove-complete":
-      toast("sync", t("removedTemplateInstancesDone", { count: message.removed }), "success");
-      send("get-templates");
-      break;
-    case "variable-candidate":
-      onVarCandidate(message);
-      break;
-    case "variables-saved":
-      onVariablesSaved();
-      break;
-    case "equation-inserted":
-      onEquationInserted(message);
-      break;
-    case "equation-updated":
-      onEquationUpdated(message);
-      break;
-    case "equation-deleted":
-      onEquationDeleted();
-      break;
-    case "equation-numbering-applied":
-      onEquationNumberingApplied(message);
-      break;
-    case "equation-numbering-cleared":
-      onEquationNumberingCleared(message);
-      break;
-    case "figure-inserted":
-      onFigureInserted(message);
-      break;
-    case "figure-updated":
-      onFigureUpdated(message);
-      break;
-    case "figure-deleted":
-      onFigureDeleted();
-      break;
-    case "figure-numbering-applied":
-      onFigureNumberingApplied(message);
-      break;
-    case "theorem-inserted":
-      onTheoremInserted(message);
-      break;
-    case "theorem-updated":
-      onTheoremUpdated(message);
-      break;
-    case "theorem-deleted":
-      onTheoremDeleted();
-      break;
-    case "theorem-numbering-applied":
-      onTheoremNumberingApplied(message);
-      break;
-    case "table-inserted":
-      onTableInserted(message);
-      break;
-    case "table-updated":
-      onTableUpdated(message);
-      break;
-    case "table-deleted":
-      onTableDeleted();
-      break;
-    case "table-numbering-applied":
-      onTableNumberingApplied(message);
-      break;
-    case "crossref-inserted":
-      onCrossrefInserted(message);
-      break;
-    case "crossrefs-updated":
-      onCrossrefsUpdated(message);
-      break;
-    case "consistency-results":
-      onConsistencyResults(message);
-      break;
-    case "issue-fixed":
-      onIssueFixed(message);
-      break;
-    case "all-fixed":
-      onAllFixed(message);
-      break;
-    // References & Citations
-    case "references-loaded":
-      onReferencesLoaded(message);
-      break;
-    case "reference-added":
-      onReferenceAdded(message);
-      break;
-    case "bibtex-imported":
-      onBibtexImported(message);
-      break;
-    case "reference-deleted":
-      onReferenceDeleted(message);
-      break;
-    case "citation-inserted":
-      onCitationInserted(message);
-      break;
-    case "citations-updated":
-      onCitationsUpdated(message);
-      break;
-    case "bib-slide-generated":
-      onBibSlideGenerated(message);
-      break;
-    // Charts
-    case "chart-inserted":
-      onChartInserted(message);
-      break;
-    case "chart-deleted":
-      onChartDeleted();
-      break;
-    // Subfigures
-    case "subfigure-inserted":
-      onSubfigureInserted(message);
-      break;
-    case "subfigure-updated":
-      onSubfigureUpdated(message);
-      break;
-    case "subfigure-deleted":
-      onSubfigureDeleted();
-      break;
-    case "subfigure-numbering-applied":
-      onSubfigureNumberingApplied(message);
-      break;
-    // Slide Templates
-    case "slide-template-inserted":
-      onSlideTemplateInserted(message);
-      break;
-    // Speaker Cues
-    case "speaker-cues-loaded":
-      onSpeakerCuesLoaded(message);
-      break;
-    case "speaker-cue-saved":
-      onSpeakerCueSaved(message);
-      break;
-    case "auto-estimate-complete":
-      onAutoEstimateComplete(message);
-      break;
-    case "speaker-cues-cleared":
-      onCuesCleared(message);
-      break;
-    case "time-budget-slide-generated":
-      onTimeBudgetGenerated(message);
-      break;
-    // Appendix
-    case "appendix-info":
-      onAppendixInfoLoaded(message);
-      break;
-    case "appendix-divider-inserted":
-      onAppendixDividerInserted(message);
-      break;
-    case "backup-link-inserted":
-      onBackupLinkInserted(message);
-      break;
-    case "back-link-inserted":
-      onBackLinkInserted(message);
-      break;
-    case "appendix-links-updated":
-      onAppendixLinksUpdated(message);
-      break;
-    case "appendix-reordered":
-      onAppendixReordered(message);
-      break;
-    case "error":
-      toast(getErrorToastScope(), localizeBackendMessage(message.message, message.errorKey, message.errorVars), "error");
-      break;
-    case "progress":
-      toast(getErrorToastScope(), t("progressMessage", { current: message.current + 1, total: message.total }), "info");
-      break;
-    default:
-      break;
-  }
+  if (!message?.type) return;
+  const handler = responses[message.type];
+  if (handler) handler(message);
 };
 
 // Initialize

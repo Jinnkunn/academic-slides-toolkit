@@ -15,8 +15,9 @@ import {
 } from "./slides";
 import { getAbsolutePosition } from "./layout";
 
-export const REFERENCE_KIND = "reference";
-export const CITATION_KIND = "citation";
+import { AcademicNodeKind } from "./types";
+export const REFERENCE_KIND = AcademicNodeKind.Citation; // references stored as citation kind
+export const CITATION_KIND = AcademicNodeKind.Citation;
 
 const STORAGE_KEY = "academic-references";
 

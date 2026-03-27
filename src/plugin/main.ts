@@ -14,9 +14,10 @@ import { handleRunConsistencyCheck, handleAutoFixIssue, handleAutoFixAll, handle
 import { handleGetSpeakerCues, handleSetSpeakerCue, handleClearAllCues, handleAutoEstimateAll, handleInsertTimeBudgetSlide } from "./speaker-cues";
 import { handleInsertAppendixDivider, handleInsertBackupLink, handleInsertBackToMainLink, handleGetAppendixInfo, handleReorderAppendix, handleUpdateAllAppendixLinks } from "./appendix";
 import { postError } from "./errors";
-import { getStorage } from "./storage";
+import { getStorage, saveStorage } from "./storage";
 import { normalizeSettings } from "./normalize";
 import { ensureAllPagesLoaded, listPages } from "./slides";
+import type { PluginMessage } from "../shared/messages";
 
 const RUNTIME_VERSION = "dev-20250318-01";
 
@@ -26,14 +27,17 @@ figma.showUI(__html__, {
   title: "Academic Slides Toolkit · " + RUNTIME_VERSION,
 });
 
-async function handleGetPages(message: any): Promise<void> {
+// ── Local handlers ──────────────────────────────────────────────────────
+
+async function handleGetPages(message: PluginMessage): Promise<void> {
   await ensureAllPagesLoaded();
   const storage = await getStorage();
-  const template = message.templateId ? storage.templates[message.templateId] : null;
+  const tid = "templateId" in message ? (message as any).templateId : null;
+  const template = tid ? storage.templates[tid] : null;
 
   figma.ui.postMessage({
     type: "pages",
-    templateId: message.templateId || null,
+    templateId: tid || null,
     sourcePageId: template ? template.pageId : null,
     pages: listPages(),
   });
@@ -47,10 +51,9 @@ async function handleGetSettings(): Promise<void> {
   });
 }
 
-async function handleSaveSettings(message: any): Promise<void> {
+async function handleSaveSettings(message: PluginMessage): Promise<void> {
   const storage = await getStorage();
-  storage.settings = normalizeSettings(message && message.settings);
-  const { saveStorage } = await import("./storage");
+  storage.settings = normalizeSettings("settings" in message ? (message as any).settings : undefined);
   await saveStorage(storage);
 
   figma.ui.postMessage({
@@ -59,224 +62,113 @@ async function handleSaveSettings(message: any): Promise<void> {
   });
 }
 
-figma.ui.onmessage = async (message: any) => {
+async function handleGetSelectionCmd(): Promise<void> {
+  const sel = figma.currentPage.selection;
+  const selNode = sel.length > 0 ? sel[0] : null;
+  await handleGetSelection({
+    figure: serializeFigureNode(selNode ? findFigureRoot(selNode) : null),
+    theorem: serializeTheoremNode(selNode ? findTheoremRoot(selNode) : null),
+    table: serializeTableNode(selNode ? findTableRoot(selNode) : null),
+    citation: serializeCitationNode(selNode ? findCitationRoot(selNode) : null),
+    chart: serializeChartNode(selNode ? findChartRoot(selNode) : null),
+    subfigure: serializeSubfigureNode(selNode ? findSubfigureRoot(selNode) : null),
+  });
+}
+
+// ── Command table — registry replaces the 56-case switch ────────────────
+
+type CommandHandler = (message: PluginMessage) => Promise<void> | void;
+
+const commands: Record<string, CommandHandler> = {
+  // Settings
+  "get-settings":              () => handleGetSettings(),
+  "save-settings":             (m) => handleSaveSettings(m),
+  "get-selection":             () => handleGetSelectionCmd(),
+  "get-pages":                 (m) => handleGetPages(m),
+  // Equations
+  "insert-equation":           (m) => handleInsertEquation(m),
+  "update-equation":           (m) => handleUpdateEquation(m),
+  "delete-equation":           (m) => handleDeleteEquation(m),
+  "apply-equation-numbering":  (m) => handleApplyEquationNumbering(m),
+  "clear-equation-numbering":  (m) => handleClearEquationNumbering(m),
+  // Templates
+  "set-template":              (m) => handleSetTemplate(m),
+  "update-template-config":    (m) => handleUpdateTemplateConfig(m),
+  "apply-to-all":              (m) => handleApplyToAll(m),
+  "sync-all":                  (m) => handleSyncAll(m),
+  "remove-template-instances": (m) => handleRemoveTemplateInstances((m as any).templateId),
+  "get-templates":             () => handleGetTemplates(),
+  "delete-template":           (m) => handleDeleteTemplate((m as any).templateId),
+  "check-variable-candidate":  (m) => handleCheckVariableCandidate(m),
+  "save-variables":            (m) => handleSaveVariables(m),
+  // Figures
+  "insert-figure":             (m) => handleInsertFigure(m),
+  "update-figure-caption":     (m) => handleUpdateFigureCaption(m),
+  "delete-figure":             (m) => handleDeleteFigure(m),
+  "apply-figure-numbering":    (m) => handleApplyFigureNumbering(m),
+  // Theorems
+  "insert-theorem":            (m) => handleInsertTheorem(m),
+  "update-theorem":            (m) => handleUpdateTheorem(m),
+  "delete-theorem":            (m) => handleDeleteTheorem(m),
+  "apply-theorem-numbering":   (m) => handleApplyTheoremNumbering(m),
+  // Tables
+  "insert-table":              (m) => handleInsertTable(m),
+  "update-table-caption":      (m) => handleUpdateTableCaption(m),
+  "delete-table":              (m) => handleDeleteTable(m),
+  "apply-table-numbering":     (m) => handleApplyTableNumbering(m),
+  // Cross-references
+  "insert-crossref":           (m) => handleInsertCrossref(m),
+  "update-all-crossrefs":      (m) => handleUpdateAllCrossrefs(m),
+  // Consistency
+  "run-consistency-check":     (m) => handleRunConsistencyCheck(m),
+  "auto-fix-issue":            (m) => handleAutoFixIssue(m),
+  "auto-fix-all":              (m) => handleAutoFixAll(m),
+  "focus-node":                (m) => handleFocusNode(m),
+  // References & Citations
+  "get-references":            (m) => handleGetReferences(m),
+  "add-reference":             (m) => handleAddReference(m),
+  "import-bibtex":             (m) => handleImportBibtex(m),
+  "delete-reference":          (m) => handleDeleteReference(m),
+  "insert-citation":           (m) => handleInsertCitation(m),
+  "update-all-citations":      (m) => handleUpdateAllCitations(m),
+  "generate-bib-slide":        (m) => handleGenerateBibliographySlide(m),
+  // Charts
+  "insert-chart":              (m) => handleInsertChart(m),
+  "delete-chart":              (m) => handleDeleteChart(m),
+  // Subfigures
+  "insert-subfigure":          (m) => handleInsertSubfigure(m),
+  "update-subfigure":          (m) => handleUpdateSubfigure(m),
+  "delete-subfigure":          (m) => handleDeleteSubfigure(m),
+  "apply-subfigure-numbering": (m) => handleApplySubfigureNumbering(m),
+  // Slide Templates
+  "insert-slide-template":     (m) => handleInsertSlideTemplate(m),
+  // Speaker Cues
+  "get-speaker-cues":          (m) => handleGetSpeakerCues(m),
+  "set-speaker-cue":           (m) => handleSetSpeakerCue(m),
+  "clear-all-cues":            (m) => handleClearAllCues(m),
+  "auto-estimate-all":         (m) => handleAutoEstimateAll(m),
+  "generate-time-budget-slide":(m) => handleInsertTimeBudgetSlide(m),
+  // Appendix
+  "insert-appendix-divider":   (m) => handleInsertAppendixDivider(m),
+  "insert-backup-link":        (m) => handleInsertBackupLink(m),
+  "insert-back-to-main-link":  (m) => handleInsertBackToMainLink(m),
+  "get-appendix-info":         (m) => handleGetAppendixInfo(m),
+  "reorder-appendix":          (m) => handleReorderAppendix(m),
+  "update-all-appendix-links": (m) => handleUpdateAllAppendixLinks(m),
+};
+
+// ── Dispatcher ──────────────────────────────────────────────────────────
+
+figma.ui.onmessage = async (message: PluginMessage) => {
   try {
-    switch (message.type) {
-      case "get-settings":
-        await handleGetSettings();
-        break;
-      case "save-settings":
-        await handleSaveSettings(message);
-        break;
-      case "get-selection": {
-        const sel = figma.currentPage.selection;
-        const selNode = sel.length > 0 ? sel[0] : null;
-        const figRoot = selNode ? findFigureRoot(selNode) : null;
-        const thmRoot = selNode ? findTheoremRoot(selNode) : null;
-        const tblRoot = selNode ? findTableRoot(selNode) : null;
-        const citRoot = selNode ? findCitationRoot(selNode) : null;
-        const chartRoot = selNode ? findChartRoot(selNode) : null;
-        const subfigRoot = selNode ? findSubfigureRoot(selNode) : null;
-        await handleGetSelection({
-          figure: serializeFigureNode(figRoot),
-          theorem: serializeTheoremNode(thmRoot),
-          table: serializeTableNode(tblRoot),
-          citation: serializeCitationNode(citRoot),
-          chart: serializeChartNode(chartRoot),
-          subfigure: serializeSubfigureNode(subfigRoot),
-        });
-        break;
-      }
-      case "get-pages":
-        await handleGetPages(message);
-        break;
-      case "insert-equation":
-        await handleInsertEquation(message);
-        break;
-      case "update-equation":
-        await handleUpdateEquation(message);
-        break;
-      case "delete-equation":
-        await handleDeleteEquation(message);
-        break;
-      case "apply-equation-numbering":
-        await handleApplyEquationNumbering(message);
-        break;
-      case "clear-equation-numbering":
-        await handleClearEquationNumbering(message);
-        break;
-      case "set-template":
-        await handleSetTemplate(message);
-        break;
-      case "update-template-config":
-        await handleUpdateTemplateConfig(message);
-        break;
-      case "apply-to-all":
-        await handleApplyToAll(message);
-        break;
-      case "sync-all":
-        await handleSyncAll(message);
-        break;
-      case "remove-template-instances":
-        await handleRemoveTemplateInstances(message.templateId);
-        break;
-      case "get-templates":
-        await handleGetTemplates();
-        break;
-      case "delete-template":
-        await handleDeleteTemplate(message.templateId);
-        break;
-      case "check-variable-candidate":
-        await handleCheckVariableCandidate(message);
-        break;
-      case "save-variables":
-        await handleSaveVariables(message);
-        break;
-      case "insert-figure":
-        await handleInsertFigure(message);
-        break;
-      case "update-figure-caption":
-        await handleUpdateFigureCaption(message);
-        break;
-      case "delete-figure":
-        await handleDeleteFigure(message);
-        break;
-      case "apply-figure-numbering":
-        await handleApplyFigureNumbering(message);
-        break;
-      case "insert-theorem":
-        await handleInsertTheorem(message);
-        break;
-      case "update-theorem":
-        await handleUpdateTheorem(message);
-        break;
-      case "delete-theorem":
-        await handleDeleteTheorem(message);
-        break;
-      case "apply-theorem-numbering":
-        await handleApplyTheoremNumbering(message);
-        break;
-      case "insert-table":
-        await handleInsertTable(message);
-        break;
-      case "update-table-caption":
-        await handleUpdateTableCaption(message);
-        break;
-      case "delete-table":
-        await handleDeleteTable(message);
-        break;
-      case "apply-table-numbering":
-        await handleApplyTableNumbering(message);
-        break;
-      case "insert-crossref":
-        await handleInsertCrossref(message);
-        break;
-      case "update-all-crossrefs":
-        await handleUpdateAllCrossrefs(message);
-        break;
-      case "run-consistency-check":
-        await handleRunConsistencyCheck(message);
-        break;
-      case "auto-fix-issue":
-        await handleAutoFixIssue(message);
-        break;
-      case "auto-fix-all":
-        await handleAutoFixAll(message);
-        break;
-      case "focus-node":
-        handleFocusNode(message);
-        break;
-      // References & Citations
-      case "get-references":
-        await handleGetReferences(message);
-        break;
-      case "add-reference":
-        await handleAddReference(message);
-        break;
-      case "import-bibtex":
-        await handleImportBibtex(message);
-        break;
-      case "delete-reference":
-        await handleDeleteReference(message);
-        break;
-      case "insert-citation":
-        await handleInsertCitation(message);
-        break;
-      case "update-all-citations":
-        await handleUpdateAllCitations(message);
-        break;
-      case "generate-bib-slide":
-        await handleGenerateBibliographySlide(message);
-        break;
-      // Charts
-      case "insert-chart":
-        await handleInsertChart(message);
-        break;
-      case "delete-chart":
-        await handleDeleteChart(message);
-        break;
-      // Subfigures
-      case "insert-subfigure":
-        await handleInsertSubfigure(message);
-        break;
-      case "update-subfigure":
-        await handleUpdateSubfigure(message);
-        break;
-      case "delete-subfigure":
-        await handleDeleteSubfigure(message);
-        break;
-      case "apply-subfigure-numbering":
-        await handleApplySubfigureNumbering(message);
-        break;
-      // Slide Templates
-      case "insert-slide-template":
-        await handleInsertSlideTemplate(message);
-        break;
-      // Speaker Cues & Time Budget
-      case "get-speaker-cues":
-        await handleGetSpeakerCues(message);
-        break;
-      case "set-speaker-cue":
-        await handleSetSpeakerCue(message);
-        break;
-      case "clear-all-cues":
-        await handleClearAllCues(message);
-        break;
-      case "auto-estimate-all":
-        await handleAutoEstimateAll(message);
-        break;
-      case "generate-time-budget-slide":
-        await handleInsertTimeBudgetSlide(message);
-        break;
-      // Appendix
-      case "insert-appendix-divider":
-        await handleInsertAppendixDivider(message);
-        break;
-      case "insert-backup-link":
-        await handleInsertBackupLink(message);
-        break;
-      case "insert-back-to-main-link":
-        await handleInsertBackToMainLink(message);
-        break;
-      case "get-appendix-info":
-        await handleGetAppendixInfo(message);
-        break;
-      case "reorder-appendix":
-        await handleReorderAppendix(message);
-        break;
-      case "update-all-appendix-links":
-        await handleUpdateAllAppendixLinks(message);
-        break;
-      default:
-        break;
-    }
-  } catch (error: any) {
-    const errorKey = error && error.errorKey ? error.errorKey : "";
-    const errorVars = error && error.errorVars ? error.errorVars : {};
+    const handler = commands[message.type];
+    if (handler) await handler(message);
+  } catch (error: unknown) {
+    const err = error as { message?: string; errorKey?: string; errorVars?: Record<string, string> };
     postError(
-      `操作失败：${error && error.message ? error.message : String(error)}`,
-      errorKey || "errorOperationFailed",
-      errorVars,
+      `操作失败：${err.message || String(error)}`,
+      err.errorKey || "errorOperationFailed",
+      err.errorVars || {},
     );
     console.error("[AcademicSlides]", error);
   }

@@ -111,17 +111,84 @@ export type SaveVariablesMessage = {
   variables: any[];
 };
 
+// ── Figure messages ──────────────────────────────────────────────────────
+export type InsertFigureMessage = { type: "insert-figure"; imageBytes?: Uint8Array; caption?: string; labelPrefix?: string; width?: number; height?: number };
+export type UpdateFigureCaptionMessage = { type: "update-figure-caption"; nodeId?: string; caption?: string; labelPrefix?: string };
+export type DeleteFigureMessage = { type: "delete-figure"; nodeId?: string };
+export type ApplyFigureNumberingMessage = { type: "apply-figure-numbering"; scope?: string };
+
+// ── Theorem messages ─────────────────────────────────────────────────────
+export type InsertTheoremMessage = { type: "insert-theorem"; theoremType?: string; caption?: string; labelPrefix?: string };
+export type UpdateTheoremMessage = { type: "update-theorem"; nodeId?: string; theoremType?: string; caption?: string; labelPrefix?: string };
+export type DeleteTheoremMessage = { type: "delete-theorem"; nodeId?: string };
+export type ApplyTheoremNumberingMessage = { type: "apply-theorem-numbering"; scope?: string };
+
+// ── Table messages ───────────────────────────────────────────────────────
+export type InsertTableMessage = { type: "insert-table"; rows?: number; cols?: number; data?: string[][]; caption?: string; labelPrefix?: string };
+export type UpdateTableCaptionMessage = { type: "update-table-caption"; nodeId?: string; caption?: string; labelPrefix?: string };
+export type DeleteTableMessage = { type: "delete-table"; nodeId?: string };
+export type ApplyTableNumberingMessage = { type: "apply-table-numbering"; scope?: string };
+
+// ── Cross-reference messages ─────────────────────────────────────────────
+export type InsertCrossrefMessage = { type: "insert-crossref"; targetKind?: string; targetIndex?: number };
+export type UpdateAllCrossrefsMessage = { type: "update-all-crossrefs"; scope?: string };
+
+// ── Consistency messages ─────────────────────────────────────────────────
+export type RunConsistencyCheckMessage = { type: "run-consistency-check"; scope?: string };
+export type AutoFixIssueMessage = { type: "auto-fix-issue"; issue?: any };
+export type AutoFixAllMessage = { type: "auto-fix-all"; issues?: any[] };
+export type FocusNodeMessage = { type: "focus-node"; nodeId?: string };
+
+// ── Reference & Citation messages ────────────────────────────────────────
+export type GetReferencesMessage = { type: "get-references" };
+export type AddReferenceMessage = { type: "add-reference"; reference?: any };
+export type ImportBibtexMessage = { type: "import-bibtex"; bibtex?: string };
+export type DeleteReferenceMessage = { type: "delete-reference"; referenceId?: string };
+export type InsertCitationMessage = { type: "insert-citation"; referenceIds?: string[] };
+export type UpdateAllCitationsMessage = { type: "update-all-citations"; scope?: string };
+export type GenerateBibSlideMessage = { type: "generate-bib-slide"; style?: string };
+
+// ── Chart messages ───────────────────────────────────────────────────────
+export type InsertChartMessage = { type: "insert-chart"; svgMarkup?: string; chartType?: string };
+export type DeleteChartMessage = { type: "delete-chart"; nodeId?: string };
+
+// ── Subfigure messages ───────────────────────────────────────────────────
+export type InsertSubfigureMessage = { type: "insert-subfigure"; imageBytes?: Uint8Array; parentNodeId?: string; caption?: string };
+export type UpdateSubfigureMessage = { type: "update-subfigure"; nodeId?: string; caption?: string };
+export type DeleteSubfigureMessage = { type: "delete-subfigure"; nodeId?: string };
+export type ApplySubfigureNumberingMessage = { type: "apply-subfigure-numbering"; scope?: string };
+
+// ── Slide Template messages ──────────────────────────────────────────────
+export type InsertSlideTemplateMessage = { type: "insert-slide-template"; templateName?: string; layoutData?: any };
+
+// ── Speaker Cue messages ─────────────────────────────────────────────────
+export type GetSpeakerCuesMessage = { type: "get-speaker-cues" };
+export type SetSpeakerCueMessage = { type: "set-speaker-cue"; slideId?: string; cue?: string; duration?: number };
+export type ClearAllCuesMessage = { type: "clear-all-cues" };
+export type AutoEstimateAllMessage = { type: "auto-estimate-all" };
+export type GenerateTimeBudgetSlideMessage = { type: "generate-time-budget-slide" };
+
+// ── Appendix messages ────────────────────────────────────────────────────
+export type InsertAppendixDividerMessage = { type: "insert-appendix-divider" };
+export type InsertBackupLinkMessage = { type: "insert-backup-link"; targetPageId?: string };
+export type InsertBackToMainLinkMessage = { type: "insert-back-to-main-link" };
+export type GetAppendixInfoMessage = { type: "get-appendix-info" };
+export type ReorderAppendixMessage = { type: "reorder-appendix"; order?: string[] };
+export type UpdateAllAppendixLinksMessage = { type: "update-all-appendix-links" };
+
 /** Discriminated union of every message the UI can send to the plugin. */
 export type PluginMessage =
   | GetSettingsMessage
   | SaveSettingsMessage
   | GetSelectionMessage
   | GetPagesMessage
+  // Equations
   | InsertEquationMessage
   | UpdateEquationMessage
   | DeleteEquationMessage
   | ApplyEquationNumberingMessage
   | ClearEquationNumberingMessage
+  // Templates
   | SetTemplateMessage
   | UpdateTemplateConfigMessage
   | ApplyToAllMessage
@@ -130,7 +197,61 @@ export type PluginMessage =
   | GetTemplatesMessage
   | DeleteTemplateMessage
   | CheckVariableCandidateMessage
-  | SaveVariablesMessage;
+  | SaveVariablesMessage
+  // Figures
+  | InsertFigureMessage
+  | UpdateFigureCaptionMessage
+  | DeleteFigureMessage
+  | ApplyFigureNumberingMessage
+  // Theorems
+  | InsertTheoremMessage
+  | UpdateTheoremMessage
+  | DeleteTheoremMessage
+  | ApplyTheoremNumberingMessage
+  // Tables
+  | InsertTableMessage
+  | UpdateTableCaptionMessage
+  | DeleteTableMessage
+  | ApplyTableNumberingMessage
+  // Cross-references
+  | InsertCrossrefMessage
+  | UpdateAllCrossrefsMessage
+  // Consistency
+  | RunConsistencyCheckMessage
+  | AutoFixIssueMessage
+  | AutoFixAllMessage
+  | FocusNodeMessage
+  // References & Citations
+  | GetReferencesMessage
+  | AddReferenceMessage
+  | ImportBibtexMessage
+  | DeleteReferenceMessage
+  | InsertCitationMessage
+  | UpdateAllCitationsMessage
+  | GenerateBibSlideMessage
+  // Charts
+  | InsertChartMessage
+  | DeleteChartMessage
+  // Subfigures
+  | InsertSubfigureMessage
+  | UpdateSubfigureMessage
+  | DeleteSubfigureMessage
+  | ApplySubfigureNumberingMessage
+  // Slide Templates
+  | InsertSlideTemplateMessage
+  // Speaker Cues
+  | GetSpeakerCuesMessage
+  | SetSpeakerCueMessage
+  | ClearAllCuesMessage
+  | AutoEstimateAllMessage
+  | GenerateTimeBudgetSlideMessage
+  // Appendix
+  | InsertAppendixDividerMessage
+  | InsertBackupLinkMessage
+  | InsertBackToMainLinkMessage
+  | GetAppendixInfoMessage
+  | ReorderAppendixMessage
+  | UpdateAllAppendixLinksMessage;
 
 // ── Messages sent FROM the plugin TO the UI (figma.ui.postMessage) ────────
 
@@ -257,24 +378,136 @@ export type VariablesSavedResponse = {
   templateId: string;
 };
 
+// ── Additional response types ────────────────────────────────────────────
+export type FigureInsertedResponse = { type: "figure-inserted"; figure: any };
+export type FigureUpdatedResponse = { type: "figure-updated"; figure: any };
+export type FigureDeletedResponse = { type: "figure-deleted" };
+export type FigureNumberingAppliedResponse = { type: "figure-numbering-applied"; count: number };
+
+export type TheoremInsertedResponse = { type: "theorem-inserted"; theorem: any };
+export type TheoremUpdatedResponse = { type: "theorem-updated"; theorem: any };
+export type TheoremDeletedResponse = { type: "theorem-deleted" };
+export type TheoremNumberingAppliedResponse = { type: "theorem-numbering-applied"; count: number };
+
+export type TableInsertedResponse = { type: "table-inserted"; table: any };
+export type TableUpdatedResponse = { type: "table-updated"; table: any };
+export type TableDeletedResponse = { type: "table-deleted" };
+export type TableNumberingAppliedResponse = { type: "table-numbering-applied"; count: number };
+
+export type CrossrefInsertedResponse = { type: "crossref-inserted"; crossref: any };
+export type CrossrefsUpdatedResponse = { type: "crossrefs-updated"; count: number };
+
+export type ConsistencyResultsResponse = { type: "consistency-results"; issues: any[]; summary: { errors: number; warnings: number; infos: number } };
+export type IssueFixedResponse = { type: "issue-fixed"; nodeId: string; category: string };
+export type AllFixedResponse = { type: "all-fixed"; fixedCount: number };
+export type FocusNodeDoneResponse = { type: "focus-node-done"; nodeId: string };
+
+export type ReferencesLoadedResponse = { type: "references-loaded"; references: any[] };
+export type ReferenceAddedResponse = { type: "reference-added"; reference: any };
+export type BibtexImportedResponse = { type: "bibtex-imported"; count: number };
+export type ReferenceDeletedResponse = { type: "reference-deleted"; referenceId: string };
+export type CitationInsertedResponse = { type: "citation-inserted"; citation: any };
+export type CitationsUpdatedResponse = { type: "citations-updated"; count: number };
+export type BibSlideGeneratedResponse = { type: "bib-slide-generated" };
+
+export type ChartInsertedResponse = { type: "chart-inserted"; chart: any };
+export type ChartDeletedResponse = { type: "chart-deleted" };
+
+export type SubfigureInsertedResponse = { type: "subfigure-inserted"; subfigure: any };
+export type SubfigureUpdatedResponse = { type: "subfigure-updated"; subfigure: any };
+export type SubfigureDeletedResponse = { type: "subfigure-deleted" };
+export type SubfigureNumberingAppliedResponse = { type: "subfigure-numbering-applied"; count: number };
+
+export type SlideTemplateInsertedResponse = { type: "slide-template-inserted"; slideTemplate: any };
+
+export type SpeakerCuesLoadedResponse = { type: "speaker-cues-loaded"; cues: any[] };
+export type SpeakerCueSavedResponse = { type: "speaker-cue-saved"; slideId: string };
+export type AutoEstimateCompleteResponse = { type: "auto-estimate-complete"; count: number };
+export type CuesClearedResponse = { type: "speaker-cues-cleared" };
+export type TimeBudgetGeneratedResponse = { type: "time-budget-slide-generated" };
+
+export type AppendixInfoResponse = { type: "appendix-info"; info: any };
+export type AppendixDividerInsertedResponse = { type: "appendix-divider-inserted" };
+export type BackupLinkInsertedResponse = { type: "backup-link-inserted" };
+export type BackLinkInsertedResponse = { type: "back-link-inserted" };
+export type AppendixLinksUpdatedResponse = { type: "appendix-links-updated"; count: number };
+export type AppendixReorderedResponse = { type: "appendix-reordered" };
+
 /** Discriminated union of every message the plugin can send to the UI. */
 export type PluginResponse =
   | ErrorResponse
+  | ProgressResponse
   | SelectionResponse
   | PagesResponse
+  // Settings
+  | SettingsResponse
+  | SettingsSavedResponse
+  // Equations
   | EquationInsertedResponse
   | EquationUpdatedResponse
   | EquationDeletedResponse
   | EquationNumberingAppliedResponse
   | EquationNumberingClearedResponse
+  // Templates
   | TemplateSavedResponse
   | ConfigSavedResponse
-  | ProgressResponse
   | ApplyCompleteResponse
   | SyncCompleteResponse
   | RemoveCompleteResponse
   | TemplatesResponse
-  | SettingsResponse
-  | SettingsSavedResponse
   | VariableCandidateResponse
-  | VariablesSavedResponse;
+  | VariablesSavedResponse
+  // Figures
+  | FigureInsertedResponse
+  | FigureUpdatedResponse
+  | FigureDeletedResponse
+  | FigureNumberingAppliedResponse
+  // Theorems
+  | TheoremInsertedResponse
+  | TheoremUpdatedResponse
+  | TheoremDeletedResponse
+  | TheoremNumberingAppliedResponse
+  // Tables
+  | TableInsertedResponse
+  | TableUpdatedResponse
+  | TableDeletedResponse
+  | TableNumberingAppliedResponse
+  // Cross-references
+  | CrossrefInsertedResponse
+  | CrossrefsUpdatedResponse
+  // Consistency
+  | ConsistencyResultsResponse
+  | IssueFixedResponse
+  | AllFixedResponse
+  | FocusNodeDoneResponse
+  // References
+  | ReferencesLoadedResponse
+  | ReferenceAddedResponse
+  | BibtexImportedResponse
+  | ReferenceDeletedResponse
+  | CitationInsertedResponse
+  | CitationsUpdatedResponse
+  | BibSlideGeneratedResponse
+  // Charts
+  | ChartInsertedResponse
+  | ChartDeletedResponse
+  // Subfigures
+  | SubfigureInsertedResponse
+  | SubfigureUpdatedResponse
+  | SubfigureDeletedResponse
+  | SubfigureNumberingAppliedResponse
+  // Slide Templates
+  | SlideTemplateInsertedResponse
+  // Speaker Cues
+  | SpeakerCuesLoadedResponse
+  | SpeakerCueSavedResponse
+  | AutoEstimateCompleteResponse
+  | CuesClearedResponse
+  | TimeBudgetGeneratedResponse
+  // Appendix
+  | AppendixInfoResponse
+  | AppendixDividerInsertedResponse
+  | BackupLinkInsertedResponse
+  | BackLinkInsertedResponse
+  | AppendixLinksUpdatedResponse
+  | AppendixReorderedResponse;

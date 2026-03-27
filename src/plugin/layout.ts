@@ -63,7 +63,7 @@ export function buildPlacement(
   mode: string,
   fallbackPosition: any,
   layoutFrame: any
-): { mode: string; x: number; y: number; offsetX: number; offsetY: number } {
+): import("./types").Placement {
   const position = fallbackPosition || getPositionInContainer(node, container);
   const nodeWidth = Number(node && node.width) || 0;
   const nodeHeight = Number(node && node.height) || 0;

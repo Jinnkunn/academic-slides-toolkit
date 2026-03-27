@@ -16,8 +16,9 @@ import {
 } from "./slides";
 import { getAbsolutePosition } from "./layout";
 
-export const APPENDIX_KIND = "appendix";
-export const APPENDIX_LINK_KIND = "appendix-link";
+import { AcademicNodeKind } from "./types";
+export const APPENDIX_KIND = AcademicNodeKind.Appendix;
+export const APPENDIX_LINK_KIND = AcademicNodeKind.AppendixLink;
 
 // ── Plugin data helpers ─────────────────────────────────────────────────────
 
