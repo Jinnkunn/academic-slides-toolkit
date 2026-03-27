@@ -13,6 +13,7 @@ import {
   renderBindNote
 } from "./deck-ui";
 import { applySettings, saveSettings, onSettingsReceived, onSettingsSaved } from "./settings-ui";
+import { onFigureSelection, insertFigure, updateFigureCaption, deleteFigure, applyFigureNumbering, onFigureInserted, onFigureUpdated, onFigureDeleted, onFigureNumberingApplied } from "./figures-ui";
 import { send, toast, getErrorToastScope, localizeBackendMessage } from "./utils";
 import { t, applyLanguage } from "./i18n";
 
@@ -60,6 +61,12 @@ Object.assign(window, {
   applyEquationNumbering,
   clearEquationNumbering,
 
+  // Figures
+  insertFigure,
+  updateFigureCaption,
+  deleteFigure,
+  applyFigureNumbering,
+
   // Settings
   saveSettings,
 
@@ -83,6 +90,7 @@ window.onmessage = (event: MessageEvent) => {
     case "selection":
       onSelection(message.node);
       onEquationSelection(message.equation, true);
+      onFigureSelection(message.figure, true);
       break;
     case "templates":
       onTemplates(message.templates);
@@ -132,6 +140,18 @@ window.onmessage = (event: MessageEvent) => {
       break;
     case "equation-numbering-cleared":
       onEquationNumberingCleared(message);
+      break;
+    case "figure-inserted":
+      onFigureInserted(message);
+      break;
+    case "figure-updated":
+      onFigureUpdated(message);
+      break;
+    case "figure-deleted":
+      onFigureDeleted();
+      break;
+    case "figure-numbering-applied":
+      onFigureNumberingApplied(message);
       break;
     case "error":
       toast(getErrorToastScope(), localizeBackendMessage(message.message, message.errorKey, message.errorVars), "error");

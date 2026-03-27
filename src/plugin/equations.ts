@@ -187,7 +187,7 @@ export async function removeEquationLabel(root: any): Promise<boolean> {
 
 // ── Handler: get-selection ──────────────────────────────────────────────────
 
-export async function handleGetSelection(): Promise<void> {
+export async function handleGetSelection(extraData?: Record<string, any>): Promise<void> {
   const selection = figma.currentPage.selection;
   const selectedNode = selection.length > 0 ? selection[0] : null;
   const equationRoot = findEquationRoot(selectedNode);
@@ -195,7 +195,8 @@ export async function handleGetSelection(): Promise<void> {
   figma.ui.postMessage({
     type: "selection",
     node: selectedNode ? serializeNode(selectedNode) : null,
-    equation: serializeEquationNode(equationRoot)
+    equation: serializeEquationNode(equationRoot),
+    ...extraData,
   });
 }
 

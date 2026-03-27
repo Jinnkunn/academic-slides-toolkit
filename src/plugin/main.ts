@@ -2,6 +2,7 @@
 
 import { handleGetSelection, handleInsertEquation, handleUpdateEquation, handleDeleteEquation, handleApplyEquationNumbering, handleClearEquationNumbering } from "./equations";
 import { handleSetTemplate, handleUpdateTemplateConfig, handleApplyToAll, handleSyncAll, handleRemoveTemplateInstances, handleGetTemplates, handleDeleteTemplate, handleCheckVariableCandidate, handleSaveVariables } from "./templates";
+import { handleInsertFigure, handleUpdateFigureCaption, handleDeleteFigure, handleApplyFigureNumbering, findFigureRoot, serializeFigureNode } from "./figures";
 import { postError } from "./errors";
 import { getStorage } from "./storage";
 import { normalizeSettings } from "./normalize";
@@ -57,9 +58,13 @@ figma.ui.onmessage = async (message: any) => {
       case "save-settings":
         await handleSaveSettings(message);
         break;
-      case "get-selection":
-        await handleGetSelection();
+      case "get-selection": {
+        const sel = figma.currentPage.selection;
+        const selNode = sel.length > 0 ? sel[0] : null;
+        const figRoot = selNode ? findFigureRoot(selNode) : null;
+        await handleGetSelection({ figure: serializeFigureNode(figRoot) });
         break;
+      }
       case "get-pages":
         await handleGetPages(message);
         break;
@@ -105,6 +110,18 @@ figma.ui.onmessage = async (message: any) => {
       case "save-variables":
         await handleSaveVariables(message);
         break;
+      case "insert-figure":
+        await handleInsertFigure(message);
+        break;
+      case "update-figure-caption":
+        await handleUpdateFigureCaption(message);
+        break;
+      case "delete-figure":
+        await handleDeleteFigure(message);
+        break;
+      case "apply-figure-numbering":
+        await handleApplyFigureNumbering(message);
+        break;
       default:
         break;
     }
@@ -120,7 +137,12 @@ figma.ui.onmessage = async (message: any) => {
   }
 };
 
-figma.on("selectionchange", () => { handleGetSelection(); });
+figma.on("selectionchange", () => {
+  const sel = figma.currentPage.selection;
+  const selNode = sel.length > 0 ? sel[0] : null;
+  const figRoot = selNode ? findFigureRoot(selNode) : null;
+  handleGetSelection({ figure: serializeFigureNode(figRoot) });
+});
 
 handleGetSelection();
 handleGetTemplates();
