@@ -1095,7 +1095,7 @@ window.MathJax = {
                 <option value="">请选择模板</option>
               </select>
             </div>
-            <div class="status" id="overview-status">还没有选中模板。你也可以先在下面直接保存一个新的 footer 模板。</div>
+            <div class="status" id="overview-status">还没有选中模板。你也可以先在下面直接保存一个新的区域模板。</div>
           </div>
         </div>
       </section>
@@ -1106,7 +1106,7 @@ window.MathJax = {
             <div class="stack">
               <div class="hero-card">
                 <div class="hero-title" id="deck-hero-title">Deck 工具台</div>
-                <div class="hero-desc" id="deck-hero-desc">管理 footer、页码、内容来源和同步。建议先保存模板，再配置来源，最后批量同步。</div>
+                <div class="hero-desc" id="deck-hero-desc">管理模板区域、页码、内容来源和同步。建议先保存模板，再配置来源，最后批量同步。</div>
               </div>
 
               <div class="meta-grid">
@@ -1132,7 +1132,7 @@ window.MathJax = {
                 <button class="quick-card" type="button" onclick="openOverlayPage('deck', 'template')">
                   <div class="quick-kicker" id="deck-quick-template-kicker">Step 1</div>
                   <div class="quick-title" id="deck-quick-template-title">保存模板</div>
-                  <div class="quick-desc" id="deck-quick-template-desc">从当前 footer 建立模板，定义页码节点和格式。</div>
+                  <div class="quick-desc" id="deck-quick-template-desc">从当前区域建立模板，定义页码节点和格式。</div>
                 </button>
                 <button class="quick-card" type="button" onclick="openOverlayPage('deck', 'sources')">
                   <div class="quick-kicker" id="deck-quick-sources-kicker">Step 2</div>
@@ -1160,8 +1160,8 @@ window.MathJax = {
           <div class="section-head">
             <div class="overlay-kicker">Deck Panel</div>
             <div class="section-kicker">Template</div>
-            <div class="section-title" id="template-title">保存 Footer 模板</div>
-            <div class="section-desc" id="template-desc">在画布中选中整个 footer，再决定是否要自动生成页码。</div>
+            <div class="section-title" id="template-title">保存区域模板</div>
+            <div class="section-desc" id="template-desc">在画布中选中整个区域，再决定是否要自动生成页码。</div>
             <div class="overlay-actions">
               <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
             </div>
@@ -1169,7 +1169,7 @@ window.MathJax = {
           <div class="section-body">
             <div class="stack">
               <div class="box">
-                <div class="sel-empty" id="sel-empty">当前还没有检测到选区。请先在画布里选中一个 footer 节点。</div>
+                <div class="sel-empty" id="sel-empty">当前还没有检测到选区。请先在画布里选中一个模板区域节点。</div>
                 <div id="sel-info" style="display:none;">
                   <div class="sel-name" id="sel-name"></div>
                   <div class="badge-row">
@@ -1183,7 +1183,7 @@ window.MathJax = {
 
               <div id="indicator-section" style="display:none;" class="stack">
                 <div class="field-title" id="indicator-title">页码位置</div>
-                <div class="hint" id="indicator-desc">如果 footer 里有页码文字，请点下面的 TEXT 节点。没有也可以跳过。</div>
+                <div class="hint" id="indicator-desc">如果这个区域里有页码文字，请点下面的 TEXT 节点。没有也可以跳过。</div>
                 <div class="tree">
                   <div class="tree-scroll" id="node-tree"></div>
                 </div>
@@ -1193,7 +1193,16 @@ window.MathJax = {
               <div id="config-section" style="display:none;" class="stack">
                 <div class="field">
                   <label for="tpl-name" id="tpl-name-label">模板名称</label>
-                  <input type="text" id="tpl-name" placeholder="例如：季度汇报 Footer">
+                  <input type="text" id="tpl-name" placeholder="例如：顶部页眉 / 底部页脚 / 自定义区域">
+                </div>
+
+                <div class="field">
+                  <label for="tpl-kind" id="tpl-kind-label">模板类型</label>
+                  <select id="tpl-kind" onchange="setTemplateSummary()">
+                    <option id="tpl-kind-header" value="header">页眉</option>
+                    <option id="tpl-kind-footer" value="footer">页脚</option>
+                    <option id="tpl-kind-custom" value="custom">自定义</option>
+                  </select>
                 </div>
 
                 <div class="field" id="fmt-row" style="display:none;">
@@ -1212,7 +1221,7 @@ window.MathJax = {
                   <div class="row">
                     <div class="grow">
                       <select id="total-mode" onchange="onTotalModeChange()">
-                        <option value="auto">自动统计启用 footer 的 slides</option>
+                        <option value="auto">自动统计启用该模板的 slides</option>
                         <option value="custom">手动指定总页数</option>
                       </select>
                     </div>
@@ -1223,7 +1232,7 @@ window.MathJax = {
                   <div class="hint" id="total-hint">只有格式里包含 `%t` 时，才会用到总页数。</div>
                 </div>
 
-                <div class="status" id="template-summary">当前会保存一个 footer 模板，后续可直接在同一侧栏继续配置内容来源和同步。</div>
+                <div class="status" id="template-summary">当前会保存一个区域模板，后续可直接在同一侧栏继续配置内容来源和同步。</div>
                 <div class="action-bar">
                   <button class="btn btn-primary" id="save-btn" onclick="saveTemplate()">保存为模板</button>
                 </div>
@@ -1251,7 +1260,7 @@ window.MathJax = {
               <div class="status" id="source-status">先在顶部选择一个模板，然后把模板里的某个文本节点设为可同步内容。</div>
 
               <div id="source-bind-box" style="display:none;" class="stack">
-                <div class="box soft" id="bind-note">先回到模板所在 slide，选中 footer 内的一段文字，比如章节标题，然后点击下面按钮。</div>
+                <div class="box soft" id="bind-note">先回到模板所在 slide，选中模板区域内的一段文字，比如章节标题，然后点击下面按钮。</div>
                 <button class="btn btn-secondary" id="check-source-btn" onclick="checkVarCandidate()">把当前文字设为可同步内容</button>
 
                 <div id="bind-confirm" style="display:none;" class="stack">
@@ -1319,7 +1328,7 @@ window.MathJax = {
                 <div class="action-stack">
                   <button class="btn btn-secondary" id="save-sync-btn" onclick="saveSyncSettings()">保存同步设置</button>
                   <div class="danger-stack">
-                    <button class="btn btn-danger-quiet" id="remove-footers-btn" onclick="removeSelectedTemplateFooters()">删除已同步 Footer</button>
+                    <button class="btn btn-danger-quiet" id="remove-instances-btn" onclick="removeSelectedTemplateInstances()">删除已同步区域</button>
                     <button class="btn btn-danger-quiet" id="delete-template-btn" onclick="deleteSelectedTemplate()">删除模板</button>
                   </div>
                 </div>
@@ -1759,22 +1768,26 @@ const I18N = {
     metaRules: "内容来源",
     metaTargets: "将更新",
     overviewEmpty: "未选择模板。",
-    overviewActive: "模板“{name}” · {page} · 更新 {count}",
-    templateTitle: "保存 Footer 模板",
-    templateDesc: "选中 footer 后保存。",
-    selectionEmpty: "请先选中一个 footer。",
+    overviewActive: "{kind} 模板“{name}” · {page} · 更新 {count}",
+    templateTitle: "保存区域模板",
+    templateDesc: "选中一个模板区域后保存。",
+    selectionEmpty: "请先选中一个模板区域。",
     refreshSelection: "重新读取当前选区",
     indicatorTitle: "页码位置",
     indicatorDesc: "可选：指定页码文本。",
     indicatorIdle: "未启用自动页码",
     templateNameLabel: "模板名称",
-    templateNamePlaceholder: "例如：季度汇报 Footer",
+    templateNamePlaceholder: "例如：顶部页眉 / 底部页脚 / 自定义区域",
+    templateKindLabel: "模板类型",
+    templateKindHeader: "页眉",
+    templateKindFooter: "页脚",
+    templateKindCustom: "自定义",
     pageFormatLabel: "页码格式",
     totalTitle: "总页数",
     totalHint: "仅 `%t` 会用到总页数。",
-    totalModeAuto: "自动统计启用 footer 的 slides",
+    totalModeAuto: "自动统计启用该模板的 slides",
     totalModeCustom: "手动指定总页数",
-    templateSummaryDefault: "将保存为 footer 模板。",
+    templateSummaryDefault: "将保存为 {kind} 模板。",
     templateSummaryWithNumber: "页码节点：{name}",
     templateSummaryWithoutNumber: "不生成自动页码",
     saveTemplate: "保存为模板",
@@ -1808,7 +1821,7 @@ const I18N = {
     applyAll: "仅首次应用到全部",
     syncAll: "同步全部 Slides",
     saveSync: "保存同步设置",
-    removeFooters: "删除已同步 Footer",
+    removeTemplateInstances: "删除已同步区域",
     deleteTemplate: "删除模板",
     syncSummary: "{page} · 排除 {excluded} · 更新 {targets}",
     settingsTitle: "设置",
@@ -1823,7 +1836,7 @@ const I18N = {
     deckHeroTitle: "Deck",
     deckHeroDesc: "模板、来源、同步。",
     deckQuickTemplateTitle: "保存模板",
-    deckQuickTemplateDesc: "保存当前 footer。",
+    deckQuickTemplateDesc: "保存当前区域。",
     deckQuickSourcesTitle: "内容来源",
     deckQuickSourcesDesc: "绑定文字和来源页。",
     deckQuickSyncTitle: "同步设置",
@@ -1892,7 +1905,7 @@ const I18N = {
     assetsCaptionsDesc: "标题与编号。",
     settingsSaved: "设置已保存",
     chooseTemplateFirst: "请先选择一个模板",
-    chooseFooterFirst: "请先在画布里选中一个 footer 节点",
+    chooseTemplateNodeFirst: "请先在画布里选中一个模板区域节点",
     textOnlyIndicator: "只有文本节点才能作为页码位置",
     indicatorSelected: "已选择页码节点：{name}",
     customTotalInvalid: "自定义总页数必须大于 0",
@@ -1916,12 +1929,12 @@ const I18N = {
     equationsNumberingCleared: "已清除 {count} 个公式编号",
     appliedResult: "已应用到 {applied} 个页面，跳过 {skipped} 个",
     syncResult: "已同步 {synced} 个页面",
-    removedExcluded: "，移除 {removed} 个排除页 footer",
+    removedExcluded: "，移除 {removed} 个排除页模板区域",
     missingSources: "，另有 {count} 个来源 slide 未找到",
-    removedFootersDone: "已删除 {count} 个已同步 Footer",
+    removedTemplateInstancesDone: "已删除 {count} 个已同步区域",
     deleteSourceConfirm: "删除这个内容来源配置？",
-    removeFootersConfirm: "删除模板“{name}”已同步出去的所有 footer？",
-    deleteTemplateConfirm: "删除模板“{name}”？已经插入到各 slides 的 footer 不会自动删除。",
+    removeTemplateInstancesConfirm: "删除模板“{name}”已同步出去的所有区域？",
+    deleteTemplateConfirm: "删除模板“{name}”？已经插入到各 slides 的区域不会自动删除。",
     sourceMissingPage: "未找到来源 slide",
     slideLabel: "Slide {index} · {name}",
     pageExampleOnly: "仅页码，例如 3",
@@ -1962,22 +1975,26 @@ const I18N = {
     metaRules: "Sources",
     metaTargets: "Targets",
     overviewEmpty: "No template selected.",
-    overviewActive: "Template “{name}” · {page} · update {count}",
-    templateTitle: "Save Footer Template",
-    templateDesc: "Select a footer, then save.",
-    selectionEmpty: "Select a footer first.",
+    overviewActive: "{kind} template “{name}” · {page} · update {count}",
+    templateTitle: "Save Template Region",
+    templateDesc: "Select a template region, then save.",
+    selectionEmpty: "Select a template region first.",
     refreshSelection: "Refresh Selection",
     indicatorTitle: "Page Number Node",
     indicatorDesc: "Optional: choose a page-number text layer.",
     indicatorIdle: "Auto page numbers off",
     templateNameLabel: "Template Name",
-    templateNamePlaceholder: "Example: Quarterly Review Footer",
+    templateNamePlaceholder: "Example: Top Header / Bottom Footer / Custom Region",
+    templateKindLabel: "Template Kind",
+    templateKindHeader: "Header",
+    templateKindFooter: "Footer",
+    templateKindCustom: "Custom",
     pageFormatLabel: "Page Number Format",
     totalTitle: "Total Count",
     totalHint: "Used only with `%t`.",
-    totalModeAuto: "Auto count slides with enabled footer",
+    totalModeAuto: "Auto count slides with this template enabled",
     totalModeCustom: "Set total count manually",
-    templateSummaryDefault: "This will save a footer template.",
+    templateSummaryDefault: "This will save a {kind} template.",
     templateSummaryWithNumber: "Page-number node: {name}",
     templateSummaryWithoutNumber: "No auto page numbers",
     saveTemplate: "Save Template",
@@ -2011,7 +2028,7 @@ const I18N = {
     applyAll: "Apply Once to All",
     syncAll: "Sync All Slides",
     saveSync: "Save Sync Settings",
-    removeFooters: "Remove Synced Footer",
+    removeTemplateInstances: "Remove Synced Regions",
     deleteTemplate: "Delete Template",
     syncSummary: "{page} · excluded {excluded} · update {targets}",
     settingsTitle: "Settings",
@@ -2026,7 +2043,7 @@ const I18N = {
     deckHeroTitle: "Deck",
     deckHeroDesc: "Templates, sources, sync.",
     deckQuickTemplateTitle: "Save Template",
-    deckQuickTemplateDesc: "Save current footer.",
+    deckQuickTemplateDesc: "Save current region.",
     deckQuickSourcesTitle: "Content Sources",
     deckQuickSourcesDesc: "Bind text and source slides.",
     deckQuickSyncTitle: "Sync Settings",
@@ -2095,7 +2112,7 @@ const I18N = {
     assetsCaptionsDesc: "Captions and numbering.",
     settingsSaved: "Settings saved",
     chooseTemplateFirst: "Choose a template first",
-    chooseFooterFirst: "Select a footer node on the canvas first",
+    chooseTemplateNodeFirst: "Select a template region on the canvas first",
     textOnlyIndicator: "Only text nodes can be used for page numbering",
     indicatorSelected: "Selected page-number node: {name}",
     customTotalInvalid: "Custom total must be greater than 0",
@@ -2119,12 +2136,12 @@ const I18N = {
     equationsNumberingCleared: "Cleared numbering from {count} equations",
     appliedResult: "Applied to {applied} slides and skipped {skipped}",
     syncResult: "Synced {synced} slides",
-    removedExcluded: ", removed {removed} excluded footers",
+    removedExcluded: ", removed {removed} excluded template regions",
     missingSources: ", and {count} source slides were missing",
-    removedFootersDone: "Removed {count} synced footers",
+    removedTemplateInstancesDone: "Removed {count} synced regions",
     deleteSourceConfirm: "Delete this content source?",
-    removeFootersConfirm: "Remove all synced footers created from template “{name}”?",
-    deleteTemplateConfirm: "Delete template “{name}”? Footers already inserted in slides will not be removed automatically.",
+    removeTemplateInstancesConfirm: "Remove all synced regions created from template “{name}”?",
+    deleteTemplateConfirm: "Delete template “{name}”? Regions already inserted in slides will not be removed automatically.",
     sourceMissingPage: "Source slide not found",
     slideLabel: "Slide {index} · {name}",
     pageExampleOnly: "Current page only, e.g. 3",
@@ -2228,6 +2245,10 @@ function renderStaticLanguage() {
   setText("indicator-desc", "indicatorDesc");
   setText("tpl-name-label", "templateNameLabel");
   setPlaceholder("tpl-name", "templateNamePlaceholder");
+  setText("tpl-kind-label", "templateKindLabel");
+  setText("tpl-kind-header", "templateKindHeader");
+  setText("tpl-kind-footer", "templateKindFooter");
+  setText("tpl-kind-custom", "templateKindCustom");
   setText("page-fmt-label", "pageFormatLabel");
   setText("total-title", "totalTitle");
   setText("total-hint", "totalHint");
@@ -2249,7 +2270,7 @@ function renderStaticLanguage() {
   setText("apply-btn", "applyAll");
   setText("sync-btn", "syncAll");
   setText("save-sync-btn", "saveSync");
-  setText("remove-footers-btn", "removeFooters");
+  setText("remove-instances-btn", "removeTemplateInstances");
   setText("delete-template-btn", "deleteTemplate");
   setText("settings-title", "settingsTitle");
   setText("settings-desc", "settingsDesc");
@@ -2540,13 +2561,14 @@ function localizeBackendMessage(message) {
 
   const map = {
     "模板不存在": "Template not found",
-    "找不到选中的 footer 节点": "Selected footer node not found",
-    "页码节点必须位于 footer 模板内部": "The page-number node must be inside the footer template",
+    "找不到选中的模板区域节点": "Selected template region node not found",
+    "页码节点必须位于模板区域内部": "The page-number node must be inside the template region",
     "页码节点必须是文本节点": "The page-number node must be a text node",
-    "请在某一页 Slide 内选择 footer 节点": "Select a footer node inside a slide",
+    "请在某一页 Slide 内选择模板区域节点": "Select a template region inside a slide",
     "找不到当前页面": "Current page not found",
     "模板节点已被删除，请重新保存模板": "The template node was deleted. Save the template again",
     "模板节点不存在，请重新保存模板": "The template node no longer exists. Save the template again",
+    "所选节点不在该模板内部": "The selected node is not inside this template",
     "公式 SVG 为空，请先等待预览完成": "Equation SVG is empty. Wait for the preview to finish",
     "当前无法定位插入位置": "Could not determine where to insert the equation",
     "未找到可更新的公式节点": "Could not find the equation node to update",
@@ -2909,13 +2931,22 @@ function describePage(pageId) {
   return t("slideLabel", { index: index + 1, name: name });
 }
 
+function getTemplateKindLabel(kind) {
+  if (kind === "header") return t("templateKindHeader");
+  if (kind === "footer") return t("templateKindFooter");
+  return t("templateKindCustom");
+}
+
 function updateTemplateSelector() {
   const select = document.getElementById("active-template-select");
   const previous = select.value;
   let options = "<option value=\"\">" + esc(t("selectTemplate")) + "</option>";
 
   for (let index = 0; index < allTemplates.length; index++) {
-    options += "<option value=\"" + allTemplates[index].id + "\">" + esc(allTemplates[index].name) + "</option>";
+    const template = allTemplates[index];
+    options += "<option value=\"" + template.id + "\">"
+      + esc("[" + getTemplateKindLabel(template.templateKind) + "] " + template.name)
+      + "</option>";
   }
 
   select.innerHTML = options;
@@ -2962,6 +2993,7 @@ function updateOverview() {
   }
 
   status.textContent = t("overviewActive", {
+    kind: getTemplateKindLabel(template.templateKind),
     name: template.name,
     page: describePage(template.pageId),
     count: targets
@@ -3020,10 +3052,16 @@ function refreshSetupTree() {
   document.getElementById("node-tree").innerHTML = selectedNodeData ? renderTree(selectedNodeData, 0) : "";
 }
 
+function getCurrentTemplateKind() {
+  const select = document.getElementById("tpl-kind");
+  return select ? (select.value || "custom") : "custom";
+}
+
 function setTemplateSummary() {
   const summary = document.getElementById("template-summary");
+  const kind = getTemplateKindLabel(getCurrentTemplateKind());
   if (!selectedNodeId) {
-    summary.textContent = t("templateSummaryDefault");
+    summary.textContent = t("templateSummaryDefault", { kind: kind });
     return;
   }
 
@@ -3039,12 +3077,14 @@ function setTemplateSummary() {
 
 function applyTemplateConfigToForm(template, fallbackName) {
   const nameInput = document.getElementById("tpl-name");
+  const kindSelect = document.getElementById("tpl-kind");
   const pageFormat = document.getElementById("page-fmt");
   const totalMode = document.getElementById("total-mode");
   const customTotal = document.getElementById("custom-total");
   const customTotalWrap = document.getElementById("custom-total-wrap");
 
   nameInput.value = template ? (template.name || fallbackName || "") : (fallbackName || "");
+  kindSelect.value = template && template.templateKind ? template.templateKind : "custom";
   pageFormat.value = template && template.pageFormat ? template.pageFormat : "%n";
   totalMode.value = template && template.totalMode === "custom" ? "custom" : "auto";
   customTotal.value = template && template.customTotal ? String(template.customTotal) : "10";
@@ -3130,7 +3170,7 @@ function onTotalModeChange() {
 
 function saveTemplate() {
   if (!selectedNodeId) {
-    toast("template", t("chooseFooterFirst"), "error");
+    toast("template", t("chooseTemplateNodeFirst"), "error");
     return;
   }
 
@@ -3149,6 +3189,7 @@ function saveTemplate() {
     nodeId: selectedNodeId,
     pageIndicatorId: selectedIndicId || null,
     name: document.getElementById("tpl-name").value.trim() || null,
+    templateKind: getCurrentTemplateKind(),
     pageFormat: document.getElementById("page-fmt").value,
     totalMode: totalMode,
     customTotal: customTotal
@@ -3665,16 +3706,16 @@ function syncSelectedTemplate() {
   send("sync-all", getCurrentSyncPayload());
 }
 
-function removeSelectedTemplateFooters() {
+function removeSelectedTemplateInstances() {
   if (!activeTemplateId) {
     toast("sync", t("chooseTemplateFirst"), "error");
     return;
   }
   const template = getTemplateById(activeTemplateId);
-  if (!confirm(t("removeFootersConfirm", { name: template ? template.name : activeTemplateId }))) {
+  if (!confirm(t("removeTemplateInstancesConfirm", { name: template ? template.name : activeTemplateId }))) {
     return;
   }
-  send("remove-all-footers", { templateId: activeTemplateId });
+  send("remove-template-instances", { templateId: activeTemplateId });
 }
 
 function deleteSelectedTemplate() {
@@ -3824,7 +3865,7 @@ window.onmessage = function(event) {
       onSyncComplete(message);
       break;
     case "remove-complete":
-      toast("sync", t("removedFootersDone", { count: message.removed }), "success");
+      toast("sync", t("removedTemplateInstancesDone", { count: message.removed }), "success");
       send("get-templates");
       break;
     case "variable-candidate":

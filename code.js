@@ -1,4 +1,4 @@
-const STORAGE_KEY = "footerSync_v1";
+const STORAGE_KEY = "academicSlides_v2";
 const EQUATION_KIND = "equation";
 const RUNTIME_VERSION = "dev-20250318-01";
 let allPagesLoadedPromise = null;
@@ -6,7 +6,7 @@ let allPagesLoadedPromise = null;
 function emptyStorage() {
   return {
     templates: {},
-    footerMap: {},
+    templateInstanceMap: {},
     settings: {
       language: "zh-CN"
     }
@@ -20,6 +20,10 @@ function normalizeSettings(rawSettings) {
   return {
     language: language === "en-US" ? "en-US" : "zh-CN"
   };
+}
+
+function normalizeTemplateKind(rawKind) {
+  return rawKind === "header" || rawKind === "footer" ? rawKind : "custom";
 }
 
 function getPluginData(node, key) {
@@ -130,9 +134,10 @@ function normalizeTemplate(templateId, template) {
 
   return {
     id: source.id || templateId,
-    name: typeof source.name === "string" && source.name.trim() ? source.name.trim() : "Footer 模板",
+    name: typeof source.name === "string" && source.name.trim() ? source.name.trim() : "区域模板",
     nodeId: typeof source.nodeId === "string" ? source.nodeId : "",
     pageId: typeof source.pageId === "string" ? source.pageId : "",
+    templateKind: normalizeTemplateKind(source.templateKind),
     position: source.position && typeof source.position === "object"
       ? {
           x: Number(source.position.x) || 0,
@@ -159,24 +164,24 @@ function normalizeTemplate(templateId, template) {
 function normalizeStorage(rawStorage) {
   const source = rawStorage && typeof rawStorage === "object" ? rawStorage : {};
   const templates = {};
-  const footerMap = {};
+  const templateInstanceMap = {};
   const settings = normalizeSettings(source.settings);
 
   for (const [templateId, template] of Object.entries(source.templates || {})) {
     templates[templateId] = normalizeTemplate(templateId, template);
   }
 
-  if (source.footerMap && typeof source.footerMap === "object") {
-    for (const key in source.footerMap) {
-      if (Object.prototype.hasOwnProperty.call(source.footerMap, key)) {
-        footerMap[key] = source.footerMap[key];
+  if (source.templateInstanceMap && typeof source.templateInstanceMap === "object") {
+    for (const key in source.templateInstanceMap) {
+      if (Object.prototype.hasOwnProperty.call(source.templateInstanceMap, key)) {
+        templateInstanceMap[key] = source.templateInstanceMap[key];
       }
     }
   }
 
   return {
     templates,
-    footerMap,
+    templateInstanceMap,
     settings
   };
 }
@@ -498,7 +503,7 @@ async function getLoadedTargetById(targetId) {
       return resolvedTarget;
     }
     if (resolvedTarget && fallbackTarget && (resolvedTarget.id !== targetId || resolvedTarget.type !== fallbackTarget.type)) {
-      console.error("[FooterSync][target-mismatch]", {
+      console.error("[AcademicSlides][target-mismatch]", {
         requestedId: targetId,
         resolvedId: resolvedTarget.id,
         resolvedType: resolvedTarget.type,
@@ -520,25 +525,25 @@ async function getTemplateNode(template) {
   return figma.getNodeByIdAsync(template.nodeId);
 }
 
-function getFooterMapKey(templateId, targetId) {
+function getTemplateInstanceMapKey(templateId, targetId) {
   return templateId + "::" + targetId;
 }
 
-function isManagedFooterRoot(node, templateId) {
+function isManagedTemplateRoot(node, templateId) {
   return !!node
     && typeof node.getPluginData === "function"
-    && getPluginData(node, "managedByFooterSync") === "true"
-    && getPluginData(node, "isPluginFooterRoot") === "true"
-    && getPluginData(node, "footerFromTemplate") === templateId;
+    && getPluginData(node, "managedByAcademicSlides") === "true"
+    && getPluginData(node, "isTemplateInstanceRoot") === "true"
+    && getPluginData(node, "templateInstanceFrom") === templateId;
 }
 
-async function findManagedFootersOnTarget(target, templateId) {
+async function findManagedTemplateInstancesOnTarget(target, templateId) {
   const found = [];
   if (!target) return null;
 
   await loadTargetIfNeeded(target);
   walkScene(target, (node) => {
-    if (isManagedFooterRoot(node, templateId)) {
+    if (isManagedTemplateRoot(node, templateId)) {
       found.push(node);
     }
   });
@@ -546,32 +551,32 @@ async function findManagedFootersOnTarget(target, templateId) {
   return found;
 }
 
-async function getManagedFooterForTarget(templateId, targetId, storage) {
-  const mapKey = getFooterMapKey(templateId, targetId);
+async function getManagedTemplateInstanceForTarget(templateId, targetId, storage) {
+  const mapKey = getTemplateInstanceMapKey(templateId, targetId);
   const target = await getLoadedTargetById(targetId);
 
-  const mappedId = storage.footerMap[mapKey];
+  const mappedId = storage.templateInstanceMap[mapKey];
   if (mappedId) {
     const mappedNode = await figma.getNodeByIdAsync(mappedId);
     if (mappedNode) {
       return mappedNode;
     }
-    delete storage.footerMap[mapKey];
+    delete storage.templateInstanceMap[mapKey];
   }
 
-  const discoveredNodes = await findManagedFootersOnTarget(target, templateId);
+  const discoveredNodes = await findManagedTemplateInstancesOnTarget(target, templateId);
   if (discoveredNodes && discoveredNodes.length) {
-    storage.footerMap[mapKey] = discoveredNodes[0].id;
+    storage.templateInstanceMap[mapKey] = discoveredNodes[0].id;
     return discoveredNodes[0];
   }
 
   return null;
 }
 
-async function removeManagedFootersOnTarget(templateId, targetId, storage) {
-  const mapKey = getFooterMapKey(templateId, targetId);
+async function removeManagedTemplateInstancesOnTarget(templateId, targetId, storage) {
+  const mapKey = getTemplateInstanceMapKey(templateId, targetId);
   const target = await getLoadedTargetById(targetId);
-  const nodes = await findManagedFootersOnTarget(target, templateId);
+  const nodes = await findManagedTemplateInstancesOnTarget(target, templateId);
   let removed = 0;
 
   if (nodes && nodes.length) {
@@ -581,7 +586,7 @@ async function removeManagedFootersOnTarget(templateId, targetId, storage) {
     }
   }
 
-  delete storage.footerMap[mapKey];
+  delete storage.templateInstanceMap[mapKey];
   return removed;
 }
 
@@ -685,42 +690,42 @@ async function removeEquationLabel(root) {
   return !!label;
 }
 
-function markManagedSubtree(node, templateId) {
+function markManagedTemplateSubtree(node, templateId) {
   if (!node || typeof node.setPluginData !== "function") return;
 
-  node.setPluginData("managedByFooterSync", "true");
-  node.setPluginData("footerFromTemplate", templateId);
-  node.setPluginData("isPluginFooter", "true");
+  node.setPluginData("managedByAcademicSlides", "true");
+  node.setPluginData("templateInstanceFrom", templateId);
+  node.setPluginData("isTemplateInstance", "true");
 
   if ("children" in node) {
     for (let index = 0; index < node.children.length; index++) {
-      markManagedSubtree(node.children[index], templateId);
+      markManagedTemplateSubtree(node.children[index], templateId);
     }
   }
 }
 
-function markManagedFooterRoot(node, templateId) {
-  markManagedSubtree(node, templateId);
+function markManagedTemplateRoot(node, templateId) {
+  markManagedTemplateSubtree(node, templateId);
   if (node && typeof node.setPluginData === "function") {
-    node.setPluginData("isPluginFooterRoot", "true");
+    node.setPluginData("isTemplateInstanceRoot", "true");
   }
 }
 
-async function removeManagedFootersFromScene(templateId, storage) {
+async function removeManagedTemplateInstancesFromScene(templateId, storage) {
   const removedIds = new Set();
   let removed = 0;
 
-  for (const key of Object.keys(storage.footerMap)) {
+  for (const key of Object.keys(storage.templateInstanceMap)) {
     if (!key.startsWith(templateId + "::")) continue;
 
-    const nodeId = storage.footerMap[key];
+    const nodeId = storage.templateInstanceMap[key];
     const node = await figma.getNodeByIdAsync(nodeId);
     if (node) {
       node.remove();
       removed += 1;
       removedIds.add(node.id);
     }
-    delete storage.footerMap[key];
+    delete storage.templateInstanceMap[key];
   }
 
   const targets = getAllTargets();
@@ -730,7 +735,7 @@ async function removeManagedFootersFromScene(templateId, storage) {
 
     const strayNodes = [];
     walkScene(target, (node) => {
-      if (isManagedFooterRoot(node, templateId) && !removedIds.has(node.id)) {
+      if (isManagedTemplateRoot(node, templateId) && !removedIds.has(node.id)) {
         strayNodes.push(node);
       }
     });
@@ -820,20 +825,20 @@ async function applyVariables(clonedRoot, variables, pageNumber) {
 }
 
 async function resolveVariableSourceNode(template, storage, path, sourcePageId) {
-  let footerRoot = null;
+  let templateInstanceRoot = null;
   const templateRoot = await getTemplateNode(template);
 
   if (sourcePageId === template.pageId) {
-    footerRoot = templateRoot;
+    templateInstanceRoot = templateRoot;
   } else {
-    footerRoot = await getManagedFooterForTarget(template.id, sourcePageId, storage);
-    if (!footerRoot && templateRoot) {
-      footerRoot = templateRoot.clone();
+    templateInstanceRoot = await getManagedTemplateInstanceForTarget(template.id, sourcePageId, storage);
+    if (!templateInstanceRoot && templateRoot) {
+      templateInstanceRoot = templateRoot.clone();
     }
   }
 
-  if (!footerRoot) return null;
-  return getNodeByPath(footerRoot, path);
+  if (!templateInstanceRoot) return null;
+  return getNodeByPath(templateInstanceRoot, path);
 }
 
 async function buildVariableSourceCache(template, storage) {
@@ -1210,7 +1215,7 @@ async function handleClearEquationNumbering(message) {
 async function handleSetTemplate(message) {
   const node = await figma.getNodeByIdAsync(message.nodeId);
   if (!node) {
-    postError("找不到选中的 footer 节点");
+    postError("找不到选中的模板区域节点");
     return;
   }
 
@@ -1220,7 +1225,7 @@ async function handleSetTemplate(message) {
   const requestedTemplateId = typeof message.templateId === "string" && storage.templates[message.templateId]
     ? message.templateId
     : "";
-  const existingTemplateId = node.getPluginData("footerTemplateId");
+  const existingTemplateId = node.getPluginData("academicTemplateId");
   const templateId = requestedTemplateId || ((existingTemplateId && storage.templates[existingTemplateId]) ? existingTemplateId : "");
   const isUpdating = !!templateId;
   const nextTemplateId = isUpdating ? templateId : `tpl_${Date.now()}`;
@@ -1235,7 +1240,7 @@ async function handleSetTemplate(message) {
   if (message.pageIndicatorId) {
     indicatorPath = getNodePath(node, message.pageIndicatorId);
     if (indicatorPath === null) {
-      postError("页码节点必须位于 footer 模板内部");
+      postError("页码节点必须位于模板区域内部");
       return;
     }
 
@@ -1256,7 +1261,7 @@ async function handleSetTemplate(message) {
   const containerNode = getTargetById(containerId);
 
   if (!containerId) {
-    postError(isSlidesEditor() ? "请在某一页 Slide 内选择 footer 节点" : "找不到当前页面");
+    postError(isSlidesEditor() ? "请在某一页 Slide 内选择模板区域节点" : "找不到当前页面");
     return;
   }
 
@@ -1265,6 +1270,7 @@ async function handleSetTemplate(message) {
     name: String(message.name || (previousTemplate && previousTemplate.name) || node.name).trim() || node.name,
     nodeId: node.id,
     pageId: containerId,
+    templateKind: normalizeTemplateKind(message.templateKind || (previousTemplate && previousTemplate.templateKind)),
     position: getPositionInContainer(node, containerNode),
     indicatorPath,
     pageFormat: message.pageFormat || (previousTemplate && previousTemplate.pageFormat) || "%n",
@@ -1278,7 +1284,7 @@ async function handleSetTemplate(message) {
     createdAt: (previousTemplate && previousTemplate.createdAt) || Date.now()
   };
 
-  node.setPluginData("footerTemplateId", nextTemplateId);
+  node.setPluginData("academicTemplateId", nextTemplateId);
 
   await saveStorage(storage);
   figma.ui.postMessage({
@@ -1346,14 +1352,14 @@ async function handleApplyToAll(message) {
 
   for (const target of targets) {
     const pageNumber = pageNumberMap[target.id];
-    const mapKey = getFooterMapKey(template.id, target.id);
-    const existingFooter = await getManagedFooterForTarget(template.id, target.id, storage);
+    const mapKey = getTemplateInstanceMapKey(template.id, target.id);
+    const existingTemplateInstance = await getManagedTemplateInstanceForTarget(template.id, target.id, storage);
 
     if (pageNumber === null) {
-      const removedOnExcluded = await removeManagedFootersOnTarget(template.id, target.id, storage);
-      if (!removedOnExcluded && message.overwrite && existingFooter) {
-        existingFooter.remove();
-        delete storage.footerMap[mapKey];
+      const removedOnExcluded = await removeManagedTemplateInstancesOnTarget(template.id, target.id, storage);
+      if (!removedOnExcluded && message.overwrite && existingTemplateInstance) {
+        existingTemplateInstance.remove();
+        delete storage.templateInstanceMap[mapKey];
       }
       skipped += 1;
       continue;
@@ -1364,25 +1370,25 @@ async function handleApplyToAll(message) {
       continue;
     }
 
-    if (existingFooter && !message.overwrite) {
+    if (existingTemplateInstance && !message.overwrite) {
       skipped += 1;
       continue;
     }
 
     const targetNode = await getLoadedTargetById(target.id);
 
-    if (existingFooter && message.overwrite) {
-      await removeManagedFootersOnTarget(template.id, target.id, storage);
+    if (existingTemplateInstance && message.overwrite) {
+      await removeManagedTemplateInstancesOnTarget(template.id, target.id, storage);
     }
 
     const clone = templateNode.clone();
     targetNode.appendChild(clone);
     applyTemplatePosition(clone, runtimeTemplate);
-    markManagedFooterRoot(clone, runtimeTemplate.id);
+    markManagedTemplateRoot(clone, runtimeTemplate.id);
 
     await stampClone(clone, runtimeTemplate, pageNumber, total, sourceCacheResult.cache);
 
-    storage.footerMap[mapKey] = clone.id;
+    storage.templateInstanceMap[mapKey] = clone.id;
     applied += 1;
   }
 
@@ -1432,11 +1438,11 @@ async function handleSyncAll(message) {
 
   for (const target of targets) {
     const pageNumber = pageNumberMap[target.id];
-    const mapKey = getFooterMapKey(template.id, target.id);
-    const existingFooter = await getManagedFooterForTarget(template.id, target.id, storage);
+    const mapKey = getTemplateInstanceMapKey(template.id, target.id);
+    const existingTemplateInstance = await getManagedTemplateInstanceForTarget(template.id, target.id, storage);
 
     if (pageNumber === null) {
-      removed += await removeManagedFootersOnTarget(template.id, target.id, storage);
+      removed += await removeManagedTemplateInstancesOnTarget(template.id, target.id, storage);
       continue;
     }
 
@@ -1446,18 +1452,18 @@ async function handleSyncAll(message) {
 
     const targetNode = await getLoadedTargetById(target.id);
 
-    if (existingFooter) {
-      await removeManagedFootersOnTarget(template.id, target.id, storage);
+    if (existingTemplateInstance) {
+      await removeManagedTemplateInstancesOnTarget(template.id, target.id, storage);
     }
 
     const clone = templateNode.clone();
     targetNode.appendChild(clone);
     applyTemplatePosition(clone, runtimeTemplate);
-    markManagedFooterRoot(clone, runtimeTemplate.id);
+    markManagedTemplateRoot(clone, runtimeTemplate.id);
 
     await stampClone(clone, runtimeTemplate, pageNumber, total, sourceCacheResult.cache);
 
-    storage.footerMap[mapKey] = clone.id;
+    storage.templateInstanceMap[mapKey] = clone.id;
     synced += 1;
   }
 
@@ -1470,7 +1476,7 @@ async function handleSyncAll(message) {
   });
 }
 
-async function handleRemoveAllFooters(templateId) {
+async function handleRemoveTemplateInstances(templateId) {
   await ensureAllPagesLoaded();
   const storage = await getStorage();
   const template = storage.templates[templateId];
@@ -1480,7 +1486,7 @@ async function handleRemoveAllFooters(templateId) {
     return;
   }
 
-  const removed = await removeManagedFootersFromScene(templateId, storage);
+  const removed = await removeManagedTemplateInstancesFromScene(templateId, storage);
 
   await saveStorage(storage);
   figma.ui.postMessage({ type: "remove-complete", templateId: templateId, removed: removed });
@@ -1527,11 +1533,11 @@ async function handleDeleteTemplate(templateId) {
 
   const templateNode = await getTemplateNode(template);
 
-  if (templateNode && templateNode.getPluginData("footerTemplateId") === templateId) {
-    templateNode.setPluginData("footerTemplateId", "");
+  if (templateNode && templateNode.getPluginData("academicTemplateId") === templateId) {
+    templateNode.setPluginData("academicTemplateId", "");
   }
 
-  await removeManagedFootersFromScene(templateId, storage);
+  await removeManagedTemplateInstancesFromScene(templateId, storage);
 
   delete storage.templates[templateId];
 
@@ -1578,7 +1584,7 @@ async function handleCheckVariableCandidate(message) {
 
   const path = getNodePath(templateNode, targetNode.id);
   if (path === null) {
-    fail("所选节点不在该 footer 模板内部");
+    fail("所选节点不在该模板内部");
     return;
   }
 
@@ -1667,8 +1673,8 @@ figma.ui.onmessage = async (message) => {
       case "sync-all":
         await handleSyncAll(message);
         break;
-      case "remove-all-footers":
-        await handleRemoveAllFooters(message.templateId);
+      case "remove-template-instances":
+        await handleRemoveTemplateInstances(message.templateId);
         break;
       case "get-templates":
         await handleGetTemplates();
@@ -1687,7 +1693,7 @@ figma.ui.onmessage = async (message) => {
     }
   } catch (error) {
     postError(`操作失败：${error && error.message ? error.message : String(error)}`);
-    console.error("[FooterSync]", error);
+    console.error("[AcademicSlides]", error);
   }
 };
 
