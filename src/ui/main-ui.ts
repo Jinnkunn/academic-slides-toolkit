@@ -24,6 +24,7 @@ import { insertSubfigure, updateSubfigure, deleteSubfigure, applySubfigureNumber
 import { insertSlideTemplate, onSlideTemplateInserted } from "./slide-templates-ui";
 import { loadSpeakerCues, saveSpeakerCue, autoEstimateAll, clearAllCues, generateTimeBudgetSlide, onSpeakerCuesLoaded, onSpeakerCueSaved, onAutoEstimateComplete, onCuesCleared, onTimeBudgetGenerated, initSpeakerCuesUI } from "./speaker-cues-ui";
 import { loadAppendixInfo, insertAppendixDivider, insertBackupLink, insertBackToMainLink, updateAllAppendixLinks, onAppendixInfoLoaded, onAppendixDividerInserted, onBackupLinkInserted, onBackLinkInserted, onAppendixLinksUpdated, onAppendixReordered, initAppendixUI } from "./appendix-ui";
+import { exportBeamer, onExportComplete } from "./export-ui";
 import { send, toast, getErrorToastScope, localizeBackendMessage } from "./utils";
 import { t, applyLanguage } from "./i18n";
 
@@ -141,6 +142,9 @@ Object.assign(window, {
   // Settings
   saveSettings,
 
+  // Export
+  exportBeamer,
+
   // Utilities
   send,
 });
@@ -239,6 +243,8 @@ const responses: Record<string, ResponseHandler> = {
   "back-link-inserted":         (m) => onBackLinkInserted(m),
   "appendix-links-updated":     (m) => onAppendixLinksUpdated(m),
   "appendix-reordered":         (m) => onAppendixReordered(m),
+  // Export
+  "export-complete":            (m) => onExportComplete(m),
   // System
   "error":                      (m) => toast(getErrorToastScope(), localizeBackendMessage(m.message, m.errorKey, m.errorVars), "error"),
   "progress":                   (m) => toast(getErrorToastScope(), t("progressMessage", { current: m.current + 1, total: m.total }), "info"),

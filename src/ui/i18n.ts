@@ -344,6 +344,14 @@ export const I18N: Record<string, Record<string, string>> = {
     errorVarOnlyText: "变量只支持文本节点",
     errorNodeNotInTemplate: "所选节点不在该模板内部",
     errorOperationFailed: "操作失败",
+    errorExportFailed: "导出失败",
+    settingsNavExport: "Export",
+    exportTitle: "导出 LaTeX/Beamer",
+    exportDesc: "将整个 Deck 导出为可编译的 Beamer .tex 文件。公式、图表、定理、表格、参考文献、交叉引用均自动转换。",
+    exportButton: "导出 Beamer .tex",
+    exportRunning: "正在导出…",
+    exportComplete: "已导出 {count} 页幻灯片",
+    exportHint: "导出后用 pdflatex + bibtex 编译",
   },
   "en-US": {
     topSubtitle: "Academic Slides Toolkit",
@@ -680,6 +688,14 @@ export const I18N: Record<string, Record<string, string>> = {
     errorVarOnlyText: "Variables only support text nodes",
     errorNodeNotInTemplate: "Selected node is not inside this template",
     errorOperationFailed: "Operation failed",
+    errorExportFailed: "Export failed",
+    settingsNavExport: "Export",
+    exportTitle: "Export LaTeX/Beamer",
+    exportDesc: "Export the entire deck as a compilable Beamer .tex file. Equations, figures, theorems, tables, references, and cross-references are all converted automatically.",
+    exportButton: "Export Beamer .tex",
+    exportRunning: "Exporting…",
+    exportComplete: "Exported {count} slides",
+    exportHint: "Compile with pdflatex + bibtex after exporting",
   },
 };
 
@@ -763,6 +779,9 @@ export function renderStaticLanguage(): void {
   setText("assets-subnav-charts", "assetsNavCharts");
   setText("assets-subnav-captions", "assetsNavCaptions");
   setText("settings-subnav-language", "settingsNavLanguage");
+  setText("settings-subnav-export", "settingsNavExport");
+  setText("export-title", "exportTitle");
+  setText("export-desc", "exportDesc");
 
   const closeButtons = document.querySelectorAll(".panel-close");
   for (let closeIndex = 0; closeIndex < closeButtons.length; closeIndex++) {

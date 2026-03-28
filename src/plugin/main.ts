@@ -13,6 +13,7 @@ import { handleInsertSlideTemplate } from "./slide-templates";
 import { handleRunConsistencyCheck, handleAutoFixIssue, handleAutoFixAll, handleFocusNode } from "./consistency";
 import { handleGetSpeakerCues, handleSetSpeakerCue, handleClearAllCues, handleAutoEstimateAll, handleInsertTimeBudgetSlide } from "./speaker-cues";
 import { handleInsertAppendixDivider, handleInsertBackupLink, handleInsertBackToMainLink, handleGetAppendixInfo, handleReorderAppendix, handleUpdateAllAppendixLinks } from "./appendix";
+import { handleExportBeamer } from "./export-beamer";
 import { postError } from "./errors";
 import { getStorage, saveStorage } from "./storage";
 import { normalizeSettings } from "./normalize";
@@ -155,6 +156,8 @@ const commands: Record<string, CommandHandler> = {
   "get-appendix-info":         (m) => handleGetAppendixInfo(m),
   "reorder-appendix":          (m) => handleReorderAppendix(m),
   "update-all-appendix-links": (m) => handleUpdateAllAppendixLinks(m),
+  // Export
+  "export-beamer":             (m) => handleExportBeamer(m),
 };
 
 // ── Dispatcher ──────────────────────────────────────────────────────────

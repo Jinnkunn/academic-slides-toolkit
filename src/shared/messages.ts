@@ -176,6 +176,9 @@ export type GetAppendixInfoMessage = { type: "get-appendix-info" };
 export type ReorderAppendixMessage = { type: "reorder-appendix"; order?: string[] };
 export type UpdateAllAppendixLinksMessage = { type: "update-all-appendix-links" };
 
+// ── Export messages ──────────────────────────────────────────────────────
+export type ExportBeamerMessage = { type: "export-beamer"; scope?: "all" | "current" };
+
 /** Discriminated union of every message the UI can send to the plugin. */
 export type PluginMessage =
   | GetSettingsMessage
@@ -251,7 +254,9 @@ export type PluginMessage =
   | InsertBackToMainLinkMessage
   | GetAppendixInfoMessage
   | ReorderAppendixMessage
-  | UpdateAllAppendixLinksMessage;
+  | UpdateAllAppendixLinksMessage
+  // Export
+  | ExportBeamerMessage;
 
 // ── Messages sent FROM the plugin TO the UI (figma.ui.postMessage) ────────
 
@@ -433,6 +438,8 @@ export type BackLinkInsertedResponse = { type: "back-link-inserted" };
 export type AppendixLinksUpdatedResponse = { type: "appendix-links-updated"; count: number };
 export type AppendixReorderedResponse = { type: "appendix-reordered" };
 
+export type ExportCompleteResponse = { type: "export-complete"; tex: string; bib: string; slideCount: number };
+
 /** Discriminated union of every message the plugin can send to the UI. */
 export type PluginResponse =
   | ErrorResponse
@@ -510,4 +517,6 @@ export type PluginResponse =
   | BackupLinkInsertedResponse
   | BackLinkInsertedResponse
   | AppendixLinksUpdatedResponse
-  | AppendixReorderedResponse;
+  | AppendixReorderedResponse
+  // Export
+  | ExportCompleteResponse;

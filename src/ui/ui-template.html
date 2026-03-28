@@ -2217,6 +2217,7 @@ Q4,180,160"></textarea>
         <button class="subnav-btn" id="settings-subnav-consistency" type="button" onclick="openOverlayPage('settings', 'consistency')">Check</button>
         <button class="subnav-btn" id="settings-subnav-speaker" type="button" onclick="openOverlayPage('settings', 'speaker')">Speaker</button>
         <button class="subnav-btn" id="settings-subnav-appendix" type="button" onclick="openOverlayPage('settings', 'appendix')">Appendix</button>
+        <button class="subnav-btn" id="settings-subnav-export" type="button" onclick="openOverlayPage('settings', 'export')">Export</button>
       </div>
 
       <div class="module-page" id="settings-page-language">
@@ -2349,6 +2350,27 @@ Q4,180,160"></textarea>
                 <button class="btn btn-secondary" type="button" onclick="updateAllAppendixLinks()">刷新全部 Appendix 链接</button>
               </div>
               <div class="toast" id="toast-appendix"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="module-page is-hidden" id="settings-page-export">
+        <section class="section">
+          <div class="section-head">
+            <div class="section-title" id="export-title">导出 LaTeX/Beamer</div>
+            <div class="overlay-actions">
+              <button class="panel-close" type="button" onclick="closeOverlayPage()">关闭</button>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="stack">
+              <div class="hint" id="export-desc">将整个 Deck 导出为可编译的 Beamer .tex 文件。公式、图表、定理、表格、参考文献、交叉引用均自动转换。</div>
+              <div class="action-bar">
+                <button class="btn btn-primary" type="button" onclick="exportBeamer()">导出 Beamer .tex</button>
+              </div>
+              <div class="hint" id="export-hint">导出后用 pdflatex + bibtex 编译：<br><code style="font-size:10px">pdflatex slides.tex && bibtex slides && pdflatex slides.tex && pdflatex slides.tex</code></div>
+              <div class="toast" id="toast-export"></div>
             </div>
           </div>
         </section>
